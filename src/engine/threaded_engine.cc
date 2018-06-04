@@ -276,32 +276,50 @@ void ThreadedEngine::DeleteOperator(OprHandle op) {
     }, Context::CPU(), {}, deps, FnProperty::kAsync, 0,
     "DeleteOperator");
 }
+//  可以看出加入OP的时候支持优先级的调度问题。
 
-void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool profiling) {
+void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool profiling) 
+{
+
   BulkFlush();
-
+  //创建一个新的 ThreadedOpr核心是里面的操作是OP
   ThreadedOpr* threaded_opr = ThreadedOpr::CastFromBase(op);
+  // 创建一个OP块，方便加入到对应的依赖变量的链表的后面。
   OprBlock* opr_block = OprBlock::New();
+  // 依赖快。
   opr_block->opr = threaded_opr;
-
   opr_block->wait.store(static_cast<int>(
       threaded_opr->const_vars.size() +
       threaded_opr->mutable_vars.size() + 1));
+  // 这个OP总的依赖的读写的变量的数目。
+
   opr_block->ctx = exec_ctx;
   opr_block->priority = priority;
   opr_block->profiling = profiling;
   ++pending_;
+  // 等待的OP加一
   // Add read dependencies.
-  for (auto&& i : threaded_opr->const_vars) {
+  //  对于所有的读变量，对应的依赖加入
+  for (auto&& i : threaded_opr->const_vars) 
+  {
+     LOG(INFO)<<"读加读依赖"<<i;
     i->AppendReadDependency(opr_block);
   }
   // Add write dependencies.
-  for (auto&& i : threaded_opr->mutable_vars) {
+  for (auto&& i : threaded_opr->mutable_vars) 
+  {
+    LOG(INFO)<<"i 写加读依赖"<<i;
     i->AppendWriteDependency(opr_block);
   }
-  if (opr_block->decr_wait() == 0) {
+  //  这里面只会加入的时候判断一次。
+  //  二并不是采用轮训来看是不是等于零在加入。
+  if (opr_block->decr_wait() == 0)
+  {
+    // 如果这个OP块所依赖的变量的数目变为0
+      LOG(INFO)<<"进入this->PushToExecute(opr_block, true)"<<opr_block;
     this->PushToExecute(opr_block, true);
   }
+
 }
 
 void ThreadedEngine::PushAsync(AsyncFn fn, Context exec_ctx,

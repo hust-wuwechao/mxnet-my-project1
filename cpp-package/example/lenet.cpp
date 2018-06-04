@@ -39,7 +39,8 @@ class Lenet {
 #endif
         {}
 
-  void Run(int max_epoch) {
+  void Run(int max_epoch)
+   {
     /*
      * LeCun, Yann, Leon Bottou, Yoshua Bengio, and Patrick Haffner.
      * "Gradient-based learning applied to document recognition."
@@ -80,8 +81,9 @@ class Lenet {
 
     Symbol lenet = SoftmaxOutput("softmax", fc2, data_label);
 
-    for (auto s : lenet.ListArguments()) {
-      LG << s;
+    for (auto s : lenet.ListArguments()) 
+    {
+          LG << s;
     }
 
     /*setup basic configs*/
@@ -141,14 +143,17 @@ class Lenet {
        ->SetParam("clip_gradient", 10)
        ->SetParam("lr", learning_rate)
        ->SetParam("wd", weight_decay);
-
+    // 设备和参数的简单的绑定
     Executor *exe = lenet.SimpleBind(ctx_dev, args_map);
+    // 调用list参数
     auto arg_names = lenet.ListArguments();
 
     for (int ITER = 0; ITER < max_epoch; ++ITER) {
       size_t start_index = 0;
-      while (start_index < train_num) {
-        if (start_index + batch_size > train_num) {
+      while (start_index < train_num)
+       {
+        if (start_index + batch_size > train_num)
+         {
           start_index = train_num - batch_size;
         }
         args_map["data"] =
@@ -163,7 +168,8 @@ class Lenet {
         exe->Forward(true);
         exe->Backward();
         // Update parameters
-        for (size_t i = 0; i < arg_names.size(); ++i) {
+        for (size_t i = 0; i < arg_names.size(); ++i)
+         {
           if (arg_names[i] == "data" || arg_names[i] == "data_label") continue;
           opt->Update(i, exe->arg_arrays[i], exe->grad_arrays[i]);
         }
@@ -257,6 +263,7 @@ class Lenet {
 
 int main(int argc, char const *argv[]) {
   Lenet lenet;
+  //  调用前面的run 函数。。。。明白了。
   lenet.Run(argc > 1 ? strtol(argv[1], NULL, 10) : 100000);
   MXNotifyShutdown();
   return 0;

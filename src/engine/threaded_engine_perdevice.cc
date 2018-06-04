@@ -88,23 +88,38 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
   }
 
  protected:
-  void PushToExecute(OprBlock *opr_block, bool pusher_thread) override {
+  void PushToExecute(OprBlock *opr_block, bool pusher_thread) override 
+  {
+
     const Context& ctx = opr_block->ctx;
     if ((opr_block->opr->prop == FnProperty::kAsync ||
-         opr_block->opr->prop == FnProperty::kDeleteVar) && pusher_thread) {
+         opr_block->opr->prop == FnProperty::kDeleteVar) && pusher_thread) 
+    {
       if (ctx.dev_mask() == Context::kGPU) {
         #if MXNET_USE_CUDA
         MSHADOW_CATCH_ERROR(mshadow::SetDevice<gpu>(ctx.dev_id));
         #endif
       }
+      LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); ";
       this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block);
-    } else {
+    }
+    
+     else 
+     
+     {
       if (ctx.dev_mask() == Context::kCPU) {
-        if (opr_block->opr->prop == FnProperty::kCPUPrioritized) {
+        if (opr_block->opr->prop == FnProperty::kCPUPrioritized) 
+        { //优先的队列设计
+
+          LOG(INFO)<<"enter cpu_priority_worker_->task_queue.Push(opr_block, opr_block->priority); ";
           cpu_priority_worker_->task_queue.Push(opr_block, opr_block->priority);
-        } else {
+        } 
+        else 
+        {
+
           int dev_id = ctx.dev_id;
           int nthread = cpu_worker_nthreads_;
+          // 新建立线程池
           auto ptr =
           cpu_normal_workers_.Get(dev_id, [this, ctx, nthread]() {
               auto blk = new ThreadWorkerBlock<kWorkerQueue>();
@@ -114,10 +129,14 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
                   }, true));
             return blk;
           });
-          if (ptr) {
-            if (opr_block->opr->prop == FnProperty::kDeleteVar) {
+          if (ptr) 
+          {
+            if (opr_block->opr->prop == FnProperty::kDeleteVar) 
+            {
               ptr->task_queue.PushFront(opr_block, opr_block->priority);
-            } else {
+            } 
+            else 
+            {
               ptr->task_queue.Push(opr_block, opr_block->priority);
             }
           }

@@ -156,6 +156,7 @@ void AttachOpResources(const Graph& g,
  *  - "addto_entry", std::vector<bool> size=g.num_node_entries()
  *    - addto_entry[eid] == 1, the corresponding op need to be performed using req=kAddTo
  *  - "skip_plus_node", std::vector<int> if set to 1, current op's execution is skiped.
+ * 核心也就是说，会利用数据的累加进行原地的操作方式。
  */
 Graph DetectInplaceAddTo(Graph g);
 

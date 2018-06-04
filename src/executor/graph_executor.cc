@@ -38,10 +38,13 @@ namespace mxnet {
 namespace exec {
 
 GraphExecutor::GraphExecutor() {
+  LOG(Info)<<"进入GraphExecutor()";
   log_verbose_ = dmlc::GetEnv("MXNET_EXEC_VERBOSE_LOGGING", false);
 }
 
-GraphExecutor::~GraphExecutor() {
+GraphExecutor::~GraphExecutor() 
+{
+  LOG(Info)<<"进入~GraphExecutor()";
   for (auto& n : op_nodes_) {
     if (n.cached_opr != nullptr) {
       Engine::Get()->DeleteOperator(n.cached_opr);
@@ -56,30 +59,41 @@ GraphExecutor::~GraphExecutor() {
 }
 
 inline NDArray InitZeros(const NDArrayStorageType stype, const TShape &shape,
-                                const Context &ctx, const int dtype) {
+                                const Context &ctx, const int dtype)
+ {
+   LOG(Info)<<"进入InitZerosshuch";
   // NDArray with default storage
-  if (stype == kDefaultStorage) {
+
+  if (stype == kDefaultStorage)
+   {
     NDArray ret(shape, ctx, false, dtype);
     ret = 0;
     return ret;
   }
-  // NDArray with non-default storage. Storage allocation is always delayed.
+   //   NDArray with non-default storage. Storage allocation is always delayed.
+   //   采用延迟分布的策略
   return NDArray(stype, shape, ctx, true, dtype);
 }
 
 inline void EmplaceBackZeros(const NDArrayStorageType stype, const TShape &shape,
                              const Context &ctx, const int dtype,
-                             std::vector<NDArray> *vec) {
+                             std::vector<NDArray> *vec)
+ {
   // NDArray with default storage
-  if (stype == kDefaultStorage) {
+  if (stype == kDefaultStorage) 
+  {
+    // 减少一次默认的分配的问题
     vec->emplace_back(shape, ctx, false, dtype);
     vec->back() = 0;
-  } else {
+  } else 
+  {
     // NDArray with non-default storage. Storage allocation is always delayed.
+
     vec->emplace_back(stype, shape, ctx, true, dtype);
   }
 }
-void GraphExecutor::Forward(bool is_train) {
+void GraphExecutor::Forward(bool is_train) 
+{
   RunOps(is_train, 0, num_forward_nodes_);
 }
 
@@ -1582,22 +1596,38 @@ void GraphExecutor::ExecuteMonCallback(size_t nid) {
   }
 }
 
-void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end) {
+void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end) 
+{
+  LOG(Info)<<"进入RunOP"<<"is_train"<<is_train<<"topo_start"<<topo_start<<"topo_end"<<topo_end;
   // Update context
+
+  //  从拓扑的开始的结束。
   const auto& idx = graph_.indexed_graph();
-  for (size_t nid = topo_start; nid < topo_end; ++nid) {
+  //  设置执行的环境。
+  for (size_t nid = topo_start; nid < topo_end; ++nid) 
+  {
     OpNode& opnode = op_nodes_[nid];
+    // 如果跳过执行？
     if (opnode.skip_exec_node) continue;
+
     const auto& inode = idx[nid];
+
     if (inode.source->is_variable()) continue;
+    // 处于是否训练过程。
     opnode.exec->op_ctx.is_train = is_train;
+
   }
 
   // Push Ops
-  for (size_t nid = topo_start; nid < topo_end; ++nid) {
+  for (size_t nid = topo_start; nid < topo_end; ++nid) 
+  {
+    //  这个是干嘛的？？？？？？？
     auto seg_op = cached_seg_opr_[nid];
     // Check segments first
-    if (monitor_callback_ == nullptr && seg_op.opr != nullptr && seg_op.topo_end <= topo_end) {
+    //  段模式优先
+    if (monitor_callback_ == nullptr && seg_op.opr != nullptr && seg_op.topo_end <= topo_end) 
+    {
+      LOG(Info)<<"进入段模式";
       bool profiling = profiler::Profiler::Get()->GetState() == profiler::Profiler::kRunning;
       Engine::Get()->Push(seg_op.opr, seg_op.ctx, 0, profiling);
       nid = seg_op.topo_end - 1;
@@ -1609,15 +1639,22 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end) {
     OpNode& opnode = op_nodes_[nid];
     if (op_nodes_[nid].skip_exec_node) continue;
     opnode.exec->op_ctx.is_train = is_train;
-    if (opnode.exec->exec_type() == ExecType::kCrossDeviceCopy) {
+    //  如果OP是跨设备的copy
+    if (opnode.exec->exec_type() == ExecType::kCrossDeviceCopy)
+     {
       CHECK_EQ(inode.inputs.size(), 1U);
       CHECK_EQ(opnode.exec->in_array.size(), 1U);
       CHECK_EQ(opnode.exec->out_array.size(), 1U);
       CopyFromTo(opnode.exec->in_array[0], &(opnode.exec->out_array[0]));
-    } else if (opnode.cached_opr != nullptr) {
+    }
+    else if (opnode.cached_opr != nullptr) 
+    {
       bool profiling = profiler::Profiler::Get()->GetState() == profiler::Profiler::kRunning;
+      LOG(INFO)<<"Engine::Get()->Push(opnode.cached_opr, opnode.ctx, 0, profiling);";
       Engine::Get()->Push(opnode.cached_opr, opnode.ctx, 0, profiling);
-    } else {
+    } 
+    else 
+    {
       LOG(FATAL) << "Not accessed";
     }
     // Monitor callbacks
