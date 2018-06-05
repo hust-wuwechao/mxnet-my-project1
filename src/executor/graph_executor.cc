@@ -263,6 +263,7 @@ inline ValueType get_node_attr(
  */
 nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
                                          const std::vector<OpReqType>& grad_req_types) {
+  LOG(INFO)<<"进入InitFullGraph";
   using nnvm::NodePtr;
   using nnvm::NodeEntry;
   // initial information
@@ -272,15 +273,21 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   nnvm::Graph g;
   g.outputs = symbol.outputs;
   bool need_grad = false;
-  for (OpReqType req : grad_req_types) {
+  for (OpReqType req : grad_req_types) 
+  {
+    //  只要有一个需要梯度写回南无需要反向传播
     if (req != kNullOp) need_grad = true;
   }
+  //
   if (!need_grad) return g;
-  for (size_t i = 0; i < g.outputs.size(); ++i) {
+
+  for (size_t i = 0; i < g.outputs.size(); ++i) 
+  {
     NodeEntry ngrad{nnvm::Node::Create(), 0, 0};
     head_grad_entry_.emplace_back(AttrHint(ngrad, g.outputs[i]));
     head_grad_map_[ngrad.node.get()] = i;
   }
+  //  得到所有的输入
   std::vector<NodePtr> args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);
   std::vector<NodeEntry> xs;
   for (size_t i = 0; i < grad_req_types.size(); ++i) {
@@ -1183,6 +1190,8 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
                                const std::vector<Context>& aux_state_ctxes,
                                const std::vector<OpReqType>& grad_req_types) {
   // setup gradient
+  //  进入
+  LOG(INFO)<<"进入initgraph（）";
   nnvm::Graph g = InitFullGraph(symbol, grad_req_types);
 
   // create "device" and "context" attrs for the graph
@@ -1197,14 +1206,16 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
   const auto& idx = g.indexed_graph();
   // get number of nodes used in forward pass
   num_forward_nodes_ = 0;
-  for (size_t i = 0; i < num_forward_outputs_; ++i) {
+  for (size_t i = 0; i < num_forward_outputs_; ++i) 
+  {
     num_forward_nodes_ = std::max(
-        num_forward_nodes_, static_cast<size_t>(idx.outputs()[i].node_id + 1));
+                    num_forward_nodes_, static_cast<size_t>(idx.outputs()[i].node_id + 1));
   }
   return g;
 }
 
-// initialize the memory of each entries
+// initialize the memory of each entries//
+//  为每一个实体分配内存
 void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
   using nnvm::DTypeVector;
   using nnvm::ShapeVector;
