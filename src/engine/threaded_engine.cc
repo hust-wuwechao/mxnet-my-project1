@@ -302,13 +302,13 @@ void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool pro
   //  对于所有的读变量，对应的依赖加入
   for (auto&& i : threaded_opr->const_vars) 
   {
-     LOG(INFO)<<"读加读依赖"<<i;
+     
     i->AppendReadDependency(opr_block);
   }
   // Add write dependencies.
   for (auto&& i : threaded_opr->mutable_vars) 
   {
-    LOG(INFO)<<"i 写加读依赖"<<i;
+   
     i->AppendWriteDependency(opr_block);
   }
   //  这里面只会加入的时候判断一次。
@@ -316,7 +316,7 @@ void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool pro
   if (opr_block->decr_wait() == 0)
   {
     // 如果这个OP块所依赖的变量的数目变为0
-      LOG(INFO)<<"进入this->PushToExecute(opr_block, true)"<<opr_block;
+     
     this->PushToExecute(opr_block, true);
   }
 
