@@ -903,10 +903,7 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
                                     nnvm::Graph g,
                                     Executor* shared_exec,
                                     const nnvm::NodeEntryMap<NDArray>& feed_dict) {
-  LOG(INFO)<<"进入  GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
-                                    nnvm::Graph g,
-                                    Executor* shared_exec,
-                                    const nnvm::NodeEntryMap<NDArray>& feed_dict)"; 
+  LOG(INFO)<<"进入  GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,"; 
   const auto& idx = g.indexed_graph();
   const auto& vstorage_type = g.GetAttr<StorageTypeVector>("storage_type");
 
@@ -999,7 +996,8 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                          std::vector<NDArray>* aux_state_vec,
                          std::unordered_map<std::string, NDArray>* shared_buffer,
                          Executor* shared_exec,
-                         const nnvm::NodeEntryMap<NDArray>& feed_dict) {
+                         const nnvm::NodeEntryMap<NDArray>& feed_dict) 
+                         {
    LOG(INFO)<<"进入 GraphExecutor::Init"; 
   nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes, arg_grad_ctxes,
                             aux_state_ctxes, grad_req_types);
