@@ -38,13 +38,13 @@ namespace mxnet {
 namespace exec {
 
 GraphExecutor::GraphExecutor() {
-  LOG(Info)<<"进入GraphExecutor()";
+  LOG(INFO)<<"进入GraphExecutor()";
   log_verbose_ = dmlc::GetEnv("MXNET_EXEC_VERBOSE_LOGGING", false);
 }
 
 GraphExecutor::~GraphExecutor() 
 {
-  LOG(Info)<<"进入~GraphExecutor()";
+  LOG(INFO)<<"进入~GraphExecutor()";
   for (auto& n : op_nodes_) {
     if (n.cached_opr != nullptr) {
       Engine::Get()->DeleteOperator(n.cached_opr);
@@ -61,7 +61,7 @@ GraphExecutor::~GraphExecutor()
 inline NDArray InitZeros(const NDArrayStorageType stype, const TShape &shape,
                                 const Context &ctx, const int dtype)
  {
-   LOG(Info)<<"进入InitZerosshuch";
+   LOG(INFO)<<"进入InitZerosshuch";
   // NDArray with default storage
 
   if (stype == kDefaultStorage)
@@ -1598,7 +1598,7 @@ void GraphExecutor::ExecuteMonCallback(size_t nid) {
 
 void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end) 
 {
-  LOG(Info)<<"进入RunOP"<<"is_train"<<is_train<<"topo_start"<<topo_start<<"topo_end"<<topo_end;
+  LOG(INFO)<<"进入RunOP"<<"is_train"<<is_train<<"topo_start"<<topo_start<<"topo_end"<<topo_end;
   // Update context
 
   //  从拓扑的开始的结束。
@@ -1627,7 +1627,7 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
     //  段模式优先
     if (monitor_callback_ == nullptr && seg_op.opr != nullptr && seg_op.topo_end <= topo_end) 
     {
-      LOG(Info)<<"进入段模式";
+      LOG(INFO)<<"进入段模式";
       bool profiling = profiler::Profiler::Get()->GetState() == profiler::Profiler::kRunning;
       Engine::Get()->Push(seg_op.opr, seg_op.ctx, 0, profiling);
       nid = seg_op.topo_end - 1;
