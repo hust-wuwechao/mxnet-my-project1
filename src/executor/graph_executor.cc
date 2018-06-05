@@ -341,6 +341,7 @@ static Graph AssignContext(Graph g,
                     const std::vector<OpReqType>& grad_req_types,
                     size_t num_forward_inputs,
                     size_t num_forward_outputs) {
+  LOG(INFO)<<"进入AssignContexth";
   const auto& idx = g.indexed_graph();
   const auto& mutable_nodes = idx.mutable_input_nodes();
   // default use default context.
@@ -541,6 +542,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                          Executor* shared_exec,
                          const nnvm::NodeEntryMap<NDArray>& feed_dict) {
   // create in_arg_ctxes, arg_grad_ctxes, aux_state_ctxes
+  LOG(INFO)<<"进入 GraphExecutor::Init";
   auto get_ctx1 = [](const NDArray& nd) { return nd.ctx(); };
   auto get_ctx2 = [default_ctx](const NDArray& nd) -> Context {
     if (nd.is_none()) return default_ctx;
@@ -647,6 +649,7 @@ void GraphExecutor::InitArguments(const nnvm::IndexedGraph& idx,
                                   std::vector<NDArray>* in_arg_vec,
                                   std::vector<NDArray>* arg_grad_vec,
                                   std::vector<NDArray>* aux_state_vec) {
+   LOG(INFO)<<"进入  GraphExecutor::InitArguments";                                 
   // initialize in_args, arg_grads, and aux_states
   // populate grad_store_
   data_entry_.resize(idx.num_node_entries());
@@ -771,6 +774,7 @@ void GraphExecutor::InitArguments(const nnvm::IndexedGraph& idx,
                                   std::vector<NDArray>* in_arg_vec,
                                   std::vector<NDArray>* arg_grad_vec,
                                   std::vector<NDArray>* aux_state_vec) {
+  LOG(INFO)<<"进入  GraphExecutor::InitArguments";  
   // initialize in_args, arg_grads, and aux_states and populate grad_store_
   data_entry_.resize(idx.num_node_entries());
   size_t arg_top = 0, aux_top = 0;
@@ -899,6 +903,10 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
                                     nnvm::Graph g,
                                     Executor* shared_exec,
                                     const nnvm::NodeEntryMap<NDArray>& feed_dict) {
+  LOG(INFO)<<"进入  GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
+                                    nnvm::Graph g,
+                                    Executor* shared_exec,
+                                    const nnvm::NodeEntryMap<NDArray>& feed_dict)"; 
   const auto& idx = g.indexed_graph();
   const auto& vstorage_type = g.GetAttr<StorageTypeVector>("storage_type");
 
@@ -992,6 +1000,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                          std::unordered_map<std::string, NDArray>* shared_buffer,
                          Executor* shared_exec,
                          const nnvm::NodeEntryMap<NDArray>& feed_dict) {
+   LOG(INFO)<<"进入 GraphExecutor::Init"; 
   nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes, arg_grad_ctxes,
                             aux_state_ctxes, grad_req_types);
   // The following code of shape and dtype inferences and argument
