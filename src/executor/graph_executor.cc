@@ -267,6 +267,8 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   using nnvm::NodePtr;
   using nnvm::NodeEntry;
   // initial information
+  // 注意符号的listInput函数的作用
+  
   num_forward_outputs_ = symbol.outputs.size();
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
 
@@ -280,18 +282,23 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   }
   //
   if (!need_grad) return g;
-
+  //对于每一个输出分配输出节点
+  LOG(INFO)<<"g.outputs.size()"<<g.outputs.size();
   for (size_t i = 0; i < g.outputs.size(); ++i) 
   {
+    
     NodeEntry ngrad{nnvm::Node::Create(), 0, 0};
     head_grad_entry_.emplace_back(AttrHint(ngrad, g.outputs[i]));
     head_grad_map_[ngrad.node.get()] = i;
+
   }
-  //  得到所有的输入
+  //  得到所有的输入参数，包括输入data   label 
   std::vector<NodePtr> args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);
   std::vector<NodeEntry> xs;
+   LOG(INFO)<<"grad_req_types.size()"<<grad_req_types.size();
   for (size_t i = 0; i < grad_req_types.size(); ++i) {
-    if (grad_req_types[i] != kNullOp) {
+    if (grad_req_types[i] != kNullOp) 
+    {
       xs.emplace_back(NodeEntry{args[i], 0, 0});
     }
   }
@@ -317,12 +324,15 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   zero_ops.push_back(nnvm::Op::Get("_zeros"));
 
   // take gradient
+  //  生成梯度的位置核心子啊这个函数。
+  LOG(INFO)<<" nnvm::Graph g_grad = nnvm::pass::Gradient";
   nnvm::Graph g_grad = nnvm::pass::Gradient(
       g, symbol.outputs, xs, head_grad_entry_,
       AggregateGradient, need_mirror, nullptr,
       zero_ops, "_copy");
   CHECK_EQ(g_grad.outputs.size(), xs.size());
-  for (const auto &e : g_grad.outputs) {
+  for (const auto &e : g_grad.outputs) 
+  {
     g.outputs.push_back(e);
   }
   return g;
@@ -548,16 +558,24 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     if (nd.is_none()) return default_ctx;
     return nd.ctx();
   };
+  // 参数上下文
+  LOG(INFO)<<"进入进入 GraphExecutor::Init  in_arg_ctxes in_args.size()"<<in_args.size();
   std::vector<Context> in_arg_ctxes(in_args.size());
+  //
   std::transform(in_args.begin(), in_args.end(), in_arg_ctxes.begin(), get_ctx1);
+  //    存储梯度的上下文
   std::vector<Context> arg_grad_ctxes(arg_grad_store.size());
+
   std::transform(arg_grad_store.begin(), arg_grad_store.end(), arg_grad_ctxes.begin(), get_ctx2);
+  // 辅助空间上下文
   std::vector<Context> aux_state_ctxes(aux_states.size());
   std::transform(aux_states.begin(), aux_states.end(), aux_state_ctxes.begin(), get_ctx1);
 
   nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes,
                             arg_grad_ctxes, aux_state_ctxes, grad_req_types);
 
+
+  
   // create arg_shapes and arg_dtypes for shape and type inferences
   const auto& idx = g.indexed_graph();
   const auto& mutable_nodes = idx.mutable_input_nodes();
@@ -566,11 +584,17 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   nnvm::ShapeVector arg_shapes;
   nnvm::DTypeVector arg_dtypes;
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
+  //  便利每一个输入
   for (size_t i = 0; i < num_forward_inputs_; ++i) {
+
     const uint32_t nid = idx.input_nodes().at(i);
+
     const std::string& arg_name = idx[nid].source->attrs.name;
+    // 获取对应的实体ID
     size_t eid = idx.entry_id(nid, 0);
-    if (mutable_nodes.count(nid)) {
+    // 如果他的写依赖的节点数目不等于0
+    if (mutable_nodes.count(nid))
+    {
       CHECK_LT(aux_top, aux_states.size());
       data_entry_[eid] = aux_states[aux_top];
       arg_shapes.push_back(aux_states[aux_top].shape());
@@ -578,7 +602,9 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       arg_stypes[eid] = aux_states[aux_top].storage_type();
       aux_state_map_.emplace(arg_name, aux_states[aux_top]);
       ++aux_top;
-    } else {
+    }
+     else 
+    {
       CHECK_LT(arg_top, in_args.size());
       data_entry_[eid] = in_args[arg_top];
       arg_shapes.push_back(in_args[arg_top].shape());
@@ -605,15 +631,21 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   }
 
   // expand arg_shapes and arg_dtypes to contain backward inputs
+
   arg_shapes.resize(idx.input_nodes().size(), TShape());
+
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
-  if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) {
+
+  if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
+  {
     HandleInferShapeError(num_forward_inputs_, g.indexed_graph(),
                           g.GetAttr<nnvm::ShapeVector>("shape"));
   }
 
   arg_dtypes.resize(idx.input_nodes().size(), -1);
+
   g = InferType(std::move(g), std::move(arg_dtypes), "__dtype__");
+
   if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
                          g.GetAttr<nnvm::DTypeVector>("dtype"));
@@ -655,7 +687,9 @@ void GraphExecutor::InitArguments(const nnvm::IndexedGraph& idx,
   data_entry_.resize(idx.num_node_entries());
   size_t arg_top = 0, aux_top = 0;
   const auto& mutable_nodes = idx.mutable_input_nodes();
-  for (size_t i = 0; i < num_forward_inputs_; ++i) {
+  for (size_t i = 0; i < num_forward_inputs_; ++i)
+   {
+     
     const uint32_t nid = idx.input_nodes().at(i);
     const uint32_t eid = idx.entry_id(nid, 0);
     const TShape& inferred_shape = inferred_shapes[eid];
@@ -999,15 +1033,19 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                          const nnvm::NodeEntryMap<NDArray>& feed_dict) 
                          {
    LOG(INFO)<<"进入 GraphExecutor::Init"; 
-  nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes, arg_grad_ctxes,
+   nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes, arg_grad_ctxes,
                             aux_state_ctxes, grad_req_types);
+  2
   // The following code of shape and dtype inferences and argument
   // initialization is for simple_bind only. Regular bind operation
   // should do this differently.
 
   // Initialize arg_shapes and arg_dtypes for shape and type inferences.
   // It contains all in_args and aux_states' shapes and types in a certain order.
+
+
   const nnvm::IndexedGraph& idx = g.indexed_graph();
+  // 索引图是如何构造的？？？？？
   nnvm::ShapeVector arg_shapes(idx.input_nodes().size(), TShape());
   nnvm::DTypeVector arg_dtypes(idx.input_nodes().size(), -1);
   StorageTypeVector arg_stypes(idx.input_nodes().size(), kUndefinedStorage);
@@ -1199,9 +1237,11 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
   // setup gradient
   //  进入
   LOG(INFO)<<"进入initgraph（）";
+  // 调用初始化全图
   nnvm::Graph g = InitFullGraph(symbol, grad_req_types);
 
   // create "device" and "context" attrs for the graph
+  //  为每一个Op分配上下文
   g = AssignContext(g, default_ctx, ctx_map,
                     in_arg_ctxes,
                     arg_grad_ctxes,
@@ -1209,12 +1249,14 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
                     grad_req_types,
                     num_forward_inputs_,
                     num_forward_outputs_);
-
+  //  获取到g 的索引图
   const auto& idx = g.indexed_graph();
   // get number of nodes used in forward pass
   num_forward_nodes_ = 0;
   for (size_t i = 0; i < num_forward_outputs_; ++i) 
   {
+    // 对于所有的输出节点
+    //  哪一个节点的ID最大，那么总的界前向节点的数目就是这个+1  这个很容易理解的。
     num_forward_nodes_ = std::max(
                     num_forward_nodes_, static_cast<size_t>(idx.outputs()[i].node_id + 1));
   }

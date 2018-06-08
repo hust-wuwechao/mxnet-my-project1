@@ -16,8 +16,10 @@
 # under the License.
 
 # pylint: skip-file
-import os, sys
-from utils import get_data
+
+import         os, sys
+
+from utils import  get_data
 import mxnet as mx
 import numpy as np
 import logging
