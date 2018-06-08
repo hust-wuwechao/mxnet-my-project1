@@ -268,7 +268,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   using nnvm::NodeEntry;
   // initial information
   // 注意符号的listInput函数的作用
-  
+
   num_forward_outputs_ = symbol.outputs.size();
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
 
@@ -1035,7 +1035,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
    LOG(INFO)<<"进入 GraphExecutor::Init"; 
    nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes, arg_grad_ctxes,
                             aux_state_ctxes, grad_req_types);
-  2
+  
   // The following code of shape and dtype inferences and argument
   // initialization is for simple_bind only. Regular bind operation
   // should do this differently.
