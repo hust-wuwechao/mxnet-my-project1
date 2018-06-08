@@ -268,12 +268,15 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   using nnvm::NodeEntry;
   // initial information
   // 注意符号的listInput函数的作用
-
+  LOG(INFO)<<"进入InitFullGraph";
+  LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
   num_forward_outputs_ = symbol.outputs.size();
+  LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
 
   nnvm::Graph g;
   g.outputs = symbol.outputs;
+
   bool need_grad = false;
   for (OpReqType req : grad_req_types) 
   {
@@ -295,7 +298,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   //  得到所有的输入参数，包括输入data   label 
   std::vector<NodePtr> args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);
   std::vector<NodeEntry> xs;
-   LOG(INFO)<<"grad_req_types.size()"<<grad_req_types.size();
+  LOG(INFO)<<"grad_req_types.size()"<<grad_req_types.size();
   for (size_t i = 0; i < grad_req_types.size(); ++i) {
     if (grad_req_types[i] != kNullOp) 
     {
@@ -585,16 +588,22 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   nnvm::DTypeVector arg_dtypes;
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
   //  便利每一个输入
-  for (size_t i = 0; i < num_forward_inputs_; ++i) {
-
+  LOG(INFO)<<"进入进入 GraphExecutor::Init  num_forward_inputs_"<<num_forward_inputs_;
+  for (size_t i = 0; i < num_forward_inputs_; ++i) 
+  {
+    
     const uint32_t nid = idx.input_nodes().at(i);
-
+    LOG(INFO)<<"进入进入 GraphExecutor::Init  const uint32_t nid = idx.input_nodes().at(i);"<<nid;
     const std::string& arg_name = idx[nid].source->attrs.name;
+    LOG(INFO)<<"进入进入 GraphExecutor::Init  arg_name"<<arg_name;
     // 获取对应的实体ID
+     
     size_t eid = idx.entry_id(nid, 0);
+    LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0);"<<eid;
     // 如果他的写依赖的节点数目不等于0
     if (mutable_nodes.count(nid))
     {
+      LOG(INFO)<<"mutable_nodes.count(nid);"<<mutable_nodes.count(nid);
       CHECK_LT(aux_top, aux_states.size());
       data_entry_[eid] = aux_states[aux_top];
       arg_shapes.push_back(aux_states[aux_top].shape());
@@ -633,7 +642,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // expand arg_shapes and arg_dtypes to contain backward inputs
 
   arg_shapes.resize(idx.input_nodes().size(), TShape());
-
+  
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
 
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
