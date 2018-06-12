@@ -250,7 +250,8 @@ struct RunContext {
   /*! \brief base Context */
   Context ctx;
   /*!
-   * \brief the stream of the device, can be NULL or Stream<gpu>* in GPU mode
+   *   \brief the stream of the device, can be NULL or Stream<gpu>* in GPU mode
+   *   对应运行的流啊，原来在这里面啊。。。。。。
    */
   void *stream;
   /*!
@@ -259,7 +260,9 @@ struct RunContext {
    * \tparam xpu the device type of the stream
    */
   template<typename xpu>
-  inline mshadow::Stream<xpu>* get_stream() const {
+  inline mshadow::Stream<xpu>* get_stream() const 
+  {
+
     return static_cast<mshadow::Stream<xpu>*>(stream);
   }
   /*! \brief get the base Context from RunContext */

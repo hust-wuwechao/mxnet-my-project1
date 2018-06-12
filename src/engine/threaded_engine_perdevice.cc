@@ -100,8 +100,10 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
         MSHADOW_CATCH_ERROR(mshadow::SetDevice<gpu>(ctx.dev_id));
         #endif
       }
-      LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); ";
+       LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); ";
+       LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); "<<opr_block->name_;
       this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block);
+
     }
     
      else 

@@ -223,7 +223,7 @@ class ThreadedVar final
  */
 struct ThreadedOpr final : public Opr,
                            public common::ObjectPoolAllocatable<ThreadedOpr> {
-  /*! \brief The function to be invoked each time. */
+  /*! \brief The function to be invoked each time.   包含一个引擎的一函数*/
   Engine::AsyncFn fn;
   /*! \brief The variable this operation will read from. */
   std::vector<ThreadedVar*> const_vars;
