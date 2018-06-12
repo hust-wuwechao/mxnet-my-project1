@@ -334,8 +334,9 @@ class ThreadedEngine : public Engine {
    */
   void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block) {
     ThreadedOpr* threaded_opr = opr_block->opr;
-    
-    if (opr_block->profiling && threaded_opr->opr_name) {
+    LOG(INFO)<<"ExecuteOprBlock"<<threaded_opr->opr_name;
+    if (opr_block->profiling && threaded_opr->opr_name)
+     {
       std::unique_ptr<profiler::ProfileOperator::Attributes> attrs;
       if (profiler_->AggregateEnabled()) {
         attrs.reset(new profiler::ProfileOperator::Attributes());
@@ -362,7 +363,9 @@ class ThreadedEngine : public Engine {
           if (!(threaded_opr->opr_exception && *threaded_opr->opr_exception) ||
               threaded_opr->wait) {
             threaded_opr->fn(run_ctx, callback);
-          } else {
+          }
+           else 
+           {
             callback();
           }
         } catch (dmlc::Error& e) {
@@ -370,7 +373,8 @@ class ThreadedEngine : public Engine {
               std::make_shared<std::exception_ptr>(std::current_exception());
           callback();
         }
-        if (debug_info) {
+        if (debug_info) 
+        {
           LOG(INFO) << "Fin ExecuteOprFn ";
         }
       } catch (std::exception& e) {
