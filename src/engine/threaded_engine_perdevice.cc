@@ -101,7 +101,7 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
         #endif
       }
        LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); ";
-       LOG(INFO)<<"enter this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block); "<<opr_block->name_;
+    
       this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block);
 
     }

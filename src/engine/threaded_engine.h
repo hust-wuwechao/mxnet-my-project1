@@ -334,6 +334,7 @@ class ThreadedEngine : public Engine {
    */
   void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block) {
     ThreadedOpr* threaded_opr = opr_block->opr;
+    
     if (opr_block->profiling && threaded_opr->opr_name) {
       std::unique_ptr<profiler::ProfileOperator::Attributes> attrs;
       if (profiler_->AggregateEnabled()) {
