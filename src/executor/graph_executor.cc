@@ -679,16 +679,21 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     // 如果他的写依赖的节点数目不等于0
     // 
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
-    // s
+    // 如果这个节点的
     if (mutable_nodes.count(nid))
     {
       
       CHECK_LT(aux_top, aux_states.size());
       data_entry_[eid] = aux_states[aux_top];
+
       arg_shapes.push_back(aux_states[aux_top].shape());
+
       arg_dtypes.push_back(aux_states[aux_top].dtype());
+
       arg_stypes[eid] = aux_states[aux_top].storage_type();
+
       aux_state_map_.emplace(arg_name, aux_states[aux_top]);
+
       ++aux_top;
     }
      else 
@@ -703,7 +708,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
       arg_stypes[eid] = in_args[arg_top].storage_type();
 
-      LOG(INFO)<<"arg_name   "<<arg_name<<"       arg_top    "<<arg_top;
+      LOG(INFO)<<"   arg_name    "<<arg_name<<"        arg_top     "<<arg_top;
 
       in_arg_map_.emplace(arg_name, in_args[arg_top]);
 
@@ -713,10 +718,11 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
       LOG(INFO)<<"kNullOp != grad_req_types[arg_top]      "<<aa;
       // 如果这个参数需要计算梯度
+
       if (kNullOp != grad_req_types[arg_top]) 
       {
         
-
+        // 依次遍历每一个输出，也就是需要计算的每一个梯度值
         auto grad_oid = grad_store_.size() + num_forward_outputs_;
            
         auto grad_eid = idx.entry_id(idx.outputs()[grad_oid]);
@@ -728,7 +734,8 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
         arg_grad_map_.emplace(arg_name, arg_grad_store[arg_top]);
 
          LOG(INFO)<<"   arg_top      "<<arg_top<<" grad_oid  "<<grad_oid<<"  grad_eid  "<<grad_eid<<"  grad_store_.size "<<grad_store_.size()<<"  arg_grad_map_  "<<arg_grad_map_.size();
-        if (log_verbose_) {
+        if (log_verbose_) 
+        {
           LOG(INFO) << "\tassign data entry\t" << grad_eid << " as "
                     << common::stype_string(arg_stypes[grad_eid]) << " (grad)";
         }
@@ -746,7 +753,10 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
   
   arg_shapes.resize(idx.input_nodes().size(), TShape());
-  LOG(INFO)<<"进入 arg_shapes.resize(idx.input_nodes().size(), TShape());   "<<idx.input_nodes().size();
+
+  
+  LOG(INFO)<<"  idx.input_nodes().size()     "<<idx.input_nodes().size();
+
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
 
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
