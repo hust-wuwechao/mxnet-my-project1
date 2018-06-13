@@ -677,9 +677,9 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     size_t eid = idx.entry_id(nid, 0);
     LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0); 对应eid"<<eid;
     // 如果他的写依赖的节点数目不等于0
-
+    // 
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
-    
+    // s
     if (mutable_nodes.count(nid))
     {
       
@@ -703,14 +703,16 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
       arg_stypes[eid] = in_args[arg_top].storage_type();
 
-      LOG(INFO)<<"arg_name   "<<arg_name<<"arg_top   "<<arg_top;
+      LOG(INFO)<<"arg_name   "<<arg_name<<"       arg_top    "<<arg_top;
 
       in_arg_map_.emplace(arg_name, in_args[arg_top]);
+
       int  aa=0;
+
       if (kNullOp != grad_req_types[arg_top]) aa=1;
-      
-      LOG(INFO)<<"kNullOp != grad_req_types[arg_top]"<<aa;
-      
+
+      LOG(INFO)<<"kNullOp != grad_req_types[arg_top]      "<<aa;
+      // 如果这个参数需要计算梯度
       if (kNullOp != grad_req_types[arg_top]) 
       {
         
@@ -725,6 +727,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
         }
       }
       ++arg_top;
+      LOG(INFO)<<"**********************************************************************************";
     }
     if (log_verbose_) {
       LOG(INFO) << "\tassign data entry\t" << eid << " as "
