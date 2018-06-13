@@ -34,7 +34,8 @@ Symbol mlp(const std::vector<int> &layers) {
   std::vector<Symbol> biases(layers.size());
   std::vector<Symbol> outputs(layers.size());
 
-  for (size_t i = 0; i < layers.size(); ++i) {
+  for (size_t i = 0; i < layers.size(); ++i)
+   {
     weights[i] = Symbol::Variable("w" + std::to_string(i));
     biases[i] = Symbol::Variable("b" + std::to_string(i));
     Symbol fc = FullyConnected(

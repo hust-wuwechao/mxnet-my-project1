@@ -662,9 +662,13 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
   //  便利每一个输入
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
+  // X ,W0,b0,w1 ,b1 ,label
+
   for (size_t i = 0; i < num_forward_inputs_; ++i) 
   {
-    
+    //  i= 0,1,2,3,4,5,6,7
+    //  nid=0,1,2,5,6,9,10,12
+    //  eid=0,1,2,5,6,9.10.12
     const uint32_t nid = idx.input_nodes().at(i);
     LOG(INFO)<<"const uint32_t nid = idx.input_nodes().at(i)   nid=====;"<<nid;
     const std::string& arg_name = idx[nid].source->attrs.name;
@@ -673,7 +677,9 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     size_t eid = idx.entry_id(nid, 0);
     LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0); 对应eid"<<eid;
     // 如果他的写依赖的节点数目不等于0
+
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
+    
     if (mutable_nodes.count(nid))
     {
       
@@ -688,12 +694,23 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
      else 
     {
       CHECK_LT(arg_top, in_args.size());
+
       data_entry_[eid] = in_args[arg_top];
+
       arg_shapes.push_back(in_args[arg_top].shape());
+
       arg_dtypes.push_back(in_args[arg_top].dtype());
+
       arg_stypes[eid] = in_args[arg_top].storage_type();
+
+      LOG(INFO)<<"arg_name   "<<arg_name<<"arg_top   "<<arg_top;
+
       in_arg_map_.emplace(arg_name, in_args[arg_top]);
-      if (kNullOp != grad_req_types[arg_top]) {
+
+      LOG(INFO)<<kNullOp != grad_req_types[arg_top];
+      
+      if (kNullOp != grad_req_types[arg_top]) 
+      {
         auto grad_oid = grad_store_.size() + num_forward_outputs_;
         auto grad_eid = idx.entry_id(idx.outputs()[grad_oid]);
         arg_stypes[grad_eid] = arg_grad_store[arg_top].storage_type();
