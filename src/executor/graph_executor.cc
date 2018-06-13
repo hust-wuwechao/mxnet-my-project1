@@ -706,11 +706,14 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       LOG(INFO)<<"arg_name   "<<arg_name<<"arg_top   "<<arg_top;
 
       in_arg_map_.emplace(arg_name, in_args[arg_top]);
-
-      LOG(INFO)<<kNullOp != grad_req_types[arg_top];
+      int  aa=0;
+      if (kNullOp != grad_req_types[arg_top]) aa=1;
+      
+      LOG(INFO)<<"kNullOp != grad_req_types[arg_top]"<<aa;
       
       if (kNullOp != grad_req_types[arg_top]) 
       {
+        
         auto grad_oid = grad_store_.size() + num_forward_outputs_;
         auto grad_eid = idx.entry_id(idx.outputs()[grad_oid]);
         arg_stypes[grad_eid] = arg_grad_store[arg_top].storage_type();
