@@ -756,8 +756,10 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
   
   LOG(INFO)<<"  idx.input_nodes().size()     "<<idx.input_nodes().size();
+  
 
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
+
 
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
   {
@@ -767,7 +769,11 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // 参数类型
   arg_dtypes.resize(idx.input_nodes().size(), -1);
   // 推测中间数据类型
+
+
   g = InferType(std::move(g), std::move(arg_dtypes), "__dtype__");
+
+
 
   if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
@@ -775,6 +781,8 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   }
 
   g.attrs["storage_type"] = std::make_shared<dmlc::any>(std::move(arg_stypes));
+ 
+ 
   //  推测存储类型
   g = InferStorageType(std::move(g), StorageTypeVector(), "");
   if (g.GetAttr<size_t>("storage_type_num_unknown_nodes") != 0U) {
@@ -786,6 +794,8 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // This function can be called by regular bind
   // operation flow as well.
   FinishInitGraph(symbol, g, shared_exec, feed_dict);
+
+
 }
 
 /*!
@@ -1060,14 +1070,27 @@ void GraphExecutor::InitArguments(const nnvm::IndexedGraph& idx,
 void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
                                     nnvm::Graph g,
                                     Executor* shared_exec,
-                                    const nnvm::NodeEntryMap<NDArray>& feed_dict) {
+                                    const nnvm::NodeEntryMap<NDArray>& feed_dict)
+ {
   LOG(INFO)<<"进入  GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,"; 
   const auto& idx = g.indexed_graph();
   const auto& vstorage_type = g.GetAttr<StorageTypeVector>("storage_type");
 
   // data entries for output gradients
-  for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) {
-    data_entry_[idx.entry_id(idx.outputs()[j])] = grad_store_[j - num_forward_outputs_].second;
+//   得到每一个输出梯度的
+ LOG(INFO)<<"  num_forward_outputs_   "<<num_forward_outputs_<<" idx.outputs().size() "<<idx.outputs().size();
+  for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
+  {
+     LOG(INFO)<< "  j===  "<<j;
+     //std::vector<std::pair<OpReqType,NDArray>>
+     //std::vector<std::pair<OpReqType,NDArray>> mxnet::exec::GraphExecutor::grad_store_
+     //  second  是数组，first   是  对应的类型
+     // std::vector<DLTensor> tvm::runtime::GraphRuntime::data_entry_
+     // 是是属于tensorflow向量
+     //
+     data_entry_[idx.entry_id(idx.outputs()[j])] = grad_store_[j - num_forward_outputs_].second;
+     // 相当于将对于梯度的实体和对应的存储结构对应起来了。
+     LOG(INFO)<<"   data_entry_  "<< data_entry_.size();
   }
 
   {
