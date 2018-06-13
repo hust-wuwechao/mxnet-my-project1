@@ -655,23 +655,23 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   LOG(INFO)<<" mutable_nodes"<<mutable_nodes.size();
   
   size_t arg_top = 0, aux_top = 0;
+  LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
   data_entry_.resize(idx.num_node_entries());
   nnvm::ShapeVector arg_shapes;
   nnvm::DTypeVector arg_dtypes;
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
   //  便利每一个输入
-  LOG(INFO)<<"进入进入 GraphExecutor::Init  num_forward_inputs_"<<num_forward_inputs_;
+  LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
   for (size_t i = 0; i < num_forward_inputs_; ++i) 
   {
     
     const uint32_t nid = idx.input_nodes().at(i);
-    LOG(INFO)<<"进入进入 GraphExecutor::Init  const uint32_t nid = idx.input_nodes().at(i)   nid=====;"<<nid;
+    LOG(INFO)<<"const uint32_t nid = idx.input_nodes().at(i)   nid=====;"<<nid;
     const std::string& arg_name = idx[nid].source->attrs.name;
-    LOG(INFO)<<"进入进入 GraphExecutor::Init  arg_name     "<<arg_name;
+    LOG(INFO)<<"对应  arg_name     "<<arg_name;
     // 获取对应的实体ID
-     
     size_t eid = idx.entry_id(nid, 0);
-    LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0);"<<eid;
+    LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0); 对应eid"<<eid;
     // 如果他的写依赖的节点数目不等于0
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
     if (mutable_nodes.count(nid))
