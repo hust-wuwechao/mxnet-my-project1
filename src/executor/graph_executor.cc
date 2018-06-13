@@ -639,7 +639,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
   std::transform(arg_grad_store.begin(), arg_grad_store.end(), arg_grad_ctxes.begin(), get_ctx2);
   // 辅助空间上下文
-  
+
   std::vector<Context> aux_state_ctxes(aux_states.size());
   std::transform(aux_states.begin(), aux_states.end(), aux_state_ctxes.begin(), get_ctx1);
 
@@ -647,10 +647,13 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                             arg_grad_ctxes, aux_state_ctxes, grad_req_types);
 
 
-  
+   LOG(INFO)<<"回到init";
   // create arg_shapes and arg_dtypes for shape and type inferences
   const auto& idx = g.indexed_graph();
+
   const auto& mutable_nodes = idx.mutable_input_nodes();
+  LOG(INFO)<<" mutable_nodes"<<mutable_nodes.size();
+  
   size_t arg_top = 0, aux_top = 0;
   data_entry_.resize(idx.num_node_entries());
   nnvm::ShapeVector arg_shapes;
