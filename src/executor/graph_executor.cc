@@ -331,16 +331,20 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
 
   // take gradient
   //  生成梯度的位置核心子啊这个函数。
+
   LOG(INFO)<<" nnvm::Graph g_grad = nnvm::pass::Gradient";
   nnvm::Graph g_grad = nnvm::pass::Gradient(
       g, symbol.outputs, xs, head_grad_entry_,
       AggregateGradient, need_mirror, nullptr,
       zero_ops, "_copy");
+  LOG(INFO)<<"加入梯度之前"<<g.outputs.size();
+  LOG(INFO)<<"g_grad.outputs.size()"<<g_grad.outputs.size();
   CHECK_EQ(g_grad.outputs.size(), xs.size());
   for (const auto &e : g_grad.outputs) 
   {
     g.outputs.push_back(e);
   }
+  LOG(INFO)<<"加入梯度之前"<<g.outputs.size();
   return g;
 }
 
