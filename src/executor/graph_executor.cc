@@ -404,7 +404,7 @@ static Graph AssignContext(Graph g,
   //    populate maps and lists
   //    
 
-  LOG(INFO)<<" for (auto &kv : ctx_map) "
+  LOG(INFO)<<" for (auto &kv : ctx_map) ";
   // 参数名字到山下文的映射
   //const std::map<std::string, Context>& ctx_map,
   for (auto &kv : ctx_map) 
