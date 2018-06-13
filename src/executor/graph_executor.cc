@@ -482,7 +482,6 @@ static Graph AssignContext(Graph g,
 
   g.attrs["device"] = std::make_shared<dmlc::any>(std::move(device));
 
-  
   g = nnvm::pass::PlaceDevice(g, "__ctx_group__", device_map, "_CrossDeviceCopy");
 
   const auto& assigned_device = g.GetAttr<nnvm::DeviceVector>("device");
@@ -628,15 +627,19 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     return nd.ctx();
   };
   // 参数上下文
-  LOG(INFO)<<"进入进入 GraphExecutor::Init  in_arg_ctxes in_args.size()"<<in_args.size();
+  LOG(INFO)<<"进入进入 GraphExecutor::Init  in_arg_ctxes     in_args.size()"<<in_args.size();
   std::vector<Context> in_arg_ctxes(in_args.size());
   //
+  LOG(INFO)<<"in_args.size()"<<in_args.size();
   std::transform(in_args.begin(), in_args.end(), in_arg_ctxes.begin(), get_ctx1);
   //    存储梯度的上下文
+
+  LOG(INFO)<<"arg_grad_store.size()"<<arg_grad_store.size();
   std::vector<Context> arg_grad_ctxes(arg_grad_store.size());
 
   std::transform(arg_grad_store.begin(), arg_grad_store.end(), arg_grad_ctxes.begin(), get_ctx2);
   // 辅助空间上下文
+  
   std::vector<Context> aux_state_ctxes(aux_states.size());
   std::transform(aux_states.begin(), aux_states.end(), aux_state_ctxes.begin(), get_ctx1);
 
@@ -1332,7 +1335,9 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
   const auto& idx = g.indexed_graph();
   // get number of nodes used in forward pass
   num_forward_nodes_ = 0;
+
   LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
+
   for (size_t i = 0; i < num_forward_outputs_; ++i) 
   {
     // 对于所有的输出节点
