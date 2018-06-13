@@ -60,7 +60,8 @@ void MLP() {
   std::vector<Symbol> outputs(nLayers);
 
   Symbol null_sym;
-  for (int i = 0; i < nLayers; i++) {
+  for (int i = 0; i < nLayers; i++)
+   {
     std::string istr = std::to_string(i);
     weights[i] = Symbol::Variable(std::string("w") + istr);
     biases[i] = Symbol::Variable(std::string("b") + istr);
@@ -80,8 +81,10 @@ void MLP() {
   mx_float* aptr_y = new mx_float[128];
 
   // we make the data by hand, in 10 classes, with some pattern
-  for (int i = 0; i < 128; i++) {
-    for (int j = 0; j < 28; j++) {
+  for (int i = 0; i < 128; i++) 
+  {
+    for (int j = 0; j < 28; j++)
+    {
       aptr_x[i * 28 + j] = i % 10 * 1.0f;
     }
     aptr_y[i] = i % 10;

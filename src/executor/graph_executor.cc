@@ -273,8 +273,10 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   num_forward_outputs_ = symbol.outputs.size();
   LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
   
+
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
+
 
   nnvm::Graph g;
   g.outputs = symbol.outputs;
@@ -342,6 +344,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   CHECK_EQ(g_grad.outputs.size(), xs.size());
   for (const auto &e : g_grad.outputs) 
   {
+    LOG(INFO)<<"g.outputs.push_back(e)里面的const auto &e : g_grad.outputs"<<e;
     g.outputs.push_back(e);
   }
   LOG(INFO)<<"加入梯度之前"<<g.outputs.size();

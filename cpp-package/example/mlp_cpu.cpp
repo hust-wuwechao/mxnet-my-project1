@@ -76,14 +76,23 @@ int main(int argc, char** argv) {
   args["X"] = NDArray(Shape(batch_size, image_size*image_size), ctx);
   args["label"] = NDArray(Shape(batch_size), ctx);
   // Let MXNet infer shapes other parameters such as weights
+
+
   net.InferArgsMap(ctx, &args, args);
 
   // Initialize all parameters with uniform distribution U(-0.01, 0.01)
+
+
   auto initializer = Uniform(0.01);
-  for (auto& arg : args) {
+
+  int i=0;
+  for (auto& arg : args) 
+  {
     // arg.first is parameter name, and arg.second is the value
+    i++;
     initializer(arg.first, &arg.second);
   }
+  LOG(INFO)<<"参数的个数"<<i;
 
   // Create sgd optimizer
   Optimizer* opt = OptimizerRegistry::Find("sgd");
@@ -92,8 +101,17 @@ int main(int argc, char** argv) {
      ->SetParam("wd", weight_decay);
 
   // Create executor by binding parameters to the model
+  // 采用简单的绑定实现梯度图的自动推到
   auto *exec = net.SimpleBind(ctx, args);
+  // 
   auto arg_names = net.ListArguments();
+
+for (auto& arg_list:arg_names )
+{
+
+  LOG(INFO)<<"具体参数为"<<arg_list;
+
+}
 
   // Start training
   for (int iter = 0; iter < max_epoch; ++iter) {
