@@ -281,6 +281,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   nnvm::Graph g;
   g.outputs = symbol.outputs;
 
+
   bool need_grad = false;
   for (OpReqType req : grad_req_types) 
   {
@@ -363,21 +364,28 @@ static Graph AssignContext(Graph g,
                     const std::vector<Context>& aux_state_ctxes,
                     const std::vector<OpReqType>& grad_req_types,
                     size_t num_forward_inputs,
-                    size_t num_forward_outputs) {
+                    size_t num_forward_outputs) 
+{
   LOG(INFO)<<"进入AssignContexth";
   const auto& idx = g.indexed_graph();
   const auto& mutable_nodes = idx.mutable_input_nodes();
   // default use default context.
-  if (ctx_map.size() == 0) {
+  // 用户默认没有设置上下文
+  LOG(INFO)<<"ctx_map.size()"<<ctx_map.size();
+  if (ctx_map.size() == 0) 
+  {
+
     g.attrs["context"] = std::make_shared<nnvm::any>(
         ContextVector(idx.num_nodes(), default_ctx));
-    for (const auto& x : in_arg_ctxes) {
+    for (const auto& x : in_arg_ctxes)
+    {
       CHECK(x == default_ctx)
         << "Input array is in " << x << " while binding with ctx=" << default_ctx
         << ". All arguments must be in global context (" << default_ctx
         << ") unless group2ctx is specified for cross-device graph.";
     }
-    for (const auto& x : arg_grad_ctxes) {
+    for (const auto& x : arg_grad_ctxes) 
+    {
       CHECK(x == default_ctx)
         << "Gradient array is in " << x << " while binding with ctx="
         << default_ctx << ". All gradients must be in global context (" << default_ctx
@@ -387,29 +395,49 @@ static Graph AssignContext(Graph g,
   }
 
   // otherwise, use context assignment.
-  std::map<Context, int> ctx2id;  // map ctx to device id
-  std::vector<Context> ctx_list;  // index is device id
-  nnvm::DeviceVector device(idx.num_nodes(), -1);  // index is node id
-  nnvm::DeviceAssignMap device_map;  // map arg name to device id
+  std::map<Context, int>    ctx2id;                  // map ctx to device id     设备到ID GPU0--->0
+  std::vector<Context>      ctx_list;                // index is device id       
+  nnvm::DeviceVector device(idx.num_nodes(), -1);  // index is node id         节点和设备ID
+  nnvm::DeviceAssignMap device_map;                // map arg name to device id
 
-  // loop through the user input ctx_map and
-  // populate maps and lists
-  for (auto &kv : ctx_map) {
-    if (ctx2id.count(kv.second) == 0) {  // if context has no device id, create one
+  //    loop through the user input ctx_map and
+  //    populate maps and lists
+  //    
+
+  LOG(INFO)<<" for (auto &kv : ctx_map) "
+  // 参数名字到山下文的映射
+  //const std::map<std::string, Context>& ctx_map,
+  for (auto &kv : ctx_map) 
+  {
+    // 
+    LOG(INFO)<<kv.first;
+
+    if (ctx2id.count(kv.second) == 0) 
+    { 
+      // if context has no device id, create one
+      // 
       ctx2id[kv.second] = static_cast<int>(ctx_list.size());  // assign device id to ctx
       ctx_list.push_back(kv.second);  // save ctx to the list
     }
+
     // assign device id to to the arg name with the corresponding ctx
+    //
+    LOG(INFO)<<"device_map[kv.first] = ctx2id.at(kv.second);"<<kv.first<<"----"<<ctx2id.at(kv.second);
     device_map[kv.first] = ctx2id.at(kv.second);
+
+
   }
 
   // loop through all the rest of input nodes not specified
   // in the ctx_map and populate maps and lists
+  
   size_t arg_top = 0, aux_top = 0;
-  for (size_t i = 0; i < num_forward_inputs; ++i) {
+  for (size_t i = 0; i < num_forward_inputs; ++i) 
+  {
     const uint32_t nid = idx.input_nodes().at(i);
     Context ctx;
-    if (mutable_nodes.count(nid)) {  // aux node is mutable
+    if (mutable_nodes.count(nid)) 
+    {  // aux node is mutable
       CHECK_LT(aux_top, aux_state_ctxes.size());
       ctx = aux_state_ctxes[aux_top];
       ++aux_top;
@@ -427,12 +455,14 @@ static Graph AssignContext(Graph g,
 
   // loop through backward input nodes and populate maps and lists
   // the backward input nodes is the gradient of the loss wrt the output
+  // 
   size_t arg_grad_offset = 0;
   // keep an offset into the arg_grad_ctxes vector,
   // since g.outputs exclude arg_grad whose req == null
   CHECK_GE(grad_req_types.size(), g.outputs.size() - num_forward_outputs)
            << "insufficient number of grad_reqs";
-  for (size_t i = num_forward_outputs; i < g.outputs.size(); ++i, ++arg_grad_offset) {
+  for (size_t i = num_forward_outputs; i < g.outputs.size(); ++i, ++arg_grad_offset) 
+  {
     while (grad_req_types[arg_grad_offset] == kNullOp) ++arg_grad_offset;
     const uint32_t nid = idx.outputs()[i].node_id;
     Context ctx = arg_grad_ctxes[arg_grad_offset];
@@ -443,20 +473,32 @@ static Graph AssignContext(Graph g,
     int devid = ctx2id.at(ctx);
     if (device[nid] != -1) {
       CHECK_EQ(device[nid], devid) << "device of same output not equal to each other";
-    } else {
+    }
+     else 
+    {
       device[nid] = devid;
     }
   }
 
   g.attrs["device"] = std::make_shared<dmlc::any>(std::move(device));
+
+  
   g = nnvm::pass::PlaceDevice(g, "__ctx_group__", device_map, "_CrossDeviceCopy");
+
   const auto& assigned_device = g.GetAttr<nnvm::DeviceVector>("device");
+  // 得到最终的分配结果
 
   ContextVector vcontext;
-  for (size_t i = 0; i < assigned_device.size(); ++i) {
-    if (assigned_device[i] == -1) {
+  LOG(INFO)<<"assigned_device.size()"<<assigned_device.size();
+  for (size_t i = 0; i < assigned_device.size(); ++i) 
+  {
+     LOG(INFO)<<"assigned_device[i]"<<assigned_device[i];
+    if (assigned_device[i] == -1) 
+    {
       vcontext.push_back(default_ctx);
-    } else {
+    } 
+    else 
+    {
       vcontext.push_back(ctx_list[assigned_device[i]]);
     }
   }
@@ -464,12 +506,25 @@ static Graph AssignContext(Graph g,
   // after device planning, we should check again
   // if the assigned device of gradient node
   // corresponds to storage of grads
+
   auto &new_idx = g.indexed_graph();
+
   arg_grad_offset = 0;
-  for (size_t i = num_forward_outputs; i < g.outputs.size(); ++i, ++arg_grad_offset) {
-    while (grad_req_types[arg_grad_offset] == kNullOp) ++arg_grad_offset;
+  
+  for (size_t i = num_forward_outputs; i < g.outputs.size(); ++i, ++arg_grad_offset) 
+  {
+    // 跳过不需要的反响计算梯度的输入参数
+    while (grad_req_types[arg_grad_offset] == kNullOp)
+           ++arg_grad_offset;
+    LOG(INFO)<<" arg_grad_offset"<< arg_grad_offset; 
+    // 获取到这个反向节点的ID
     const uint32_t nid = new_idx.outputs()[i].node_id;
+
+    LOG(INFO)<<"const uint32_t nid = new_idx.outputs()[i].node_id; "<<nid;
+
+    // 获取到这个梯度的上下文。
     Context ctx = arg_grad_ctxes[arg_grad_offset];
+    // 若果这个分配到的上下文和vcontext[nid]分配的到的上下文不一致的话
     CHECK(ctx == vcontext[nid])
       << "Trying to save gradient to " << ctx
       << " while its source node \"" << new_idx[nid].source->attrs.name
@@ -478,6 +533,7 @@ static Graph AssignContext(Graph g,
   }
 
   g.attrs["context"] = std::make_shared<nnvm::any>(std::move(vcontext));
+
   return g;
 }
 
@@ -1271,7 +1327,8 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
                     grad_req_types,
                     num_forward_inputs_,
                     num_forward_outputs_);
-  //  获取到g 的索引图
+  //   获取到g 的索引图
+  //   获取索引图
   const auto& idx = g.indexed_graph();
   // get number of nodes used in forward pass
   num_forward_nodes_ = 0;
