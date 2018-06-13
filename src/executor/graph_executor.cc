@@ -524,6 +524,11 @@ static Graph AssignContext(Graph g,
     // 获取到这个梯度的上下文。
     Context ctx = arg_grad_ctxes[arg_grad_offset];
     // 若果这个分配到的上下文和vcontext[nid]分配的到的上下文不一致的话
+
+
+  //  nihao  nihao nihao 
+
+  // 
     CHECK(ctx == vcontext[nid])
       << "Trying to save gradient to " << ctx
       << " while its source node \"" << new_idx[nid].source->attrs.name
