@@ -1126,7 +1126,7 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     //    原地计算， 引用计数的方法。
     //    需要找不不同的关键路径，这些路径可以子啊执行的时候并行执行。
     //    
-    LOG(INFO)<<" g = nnvm::ApplyPass(g, "PlanMemory")";
+    LOG(INFO)<<" g = nnvm::ApplyPass(g, planmemory)";
     g = nnvm::ApplyPass(g, "PlanMemory");
   }
   LOG(INFO)<<" g = DetectInplaceAddTo(g);";
@@ -1157,16 +1157,18 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
   {
     // initialize output arrays
     auto& idx = graph_.indexed_graph();
-    for (size_t i = 0; i < num_forward_outputs_; ++i) {
+    for (size_t i = 0; i < num_forward_outputs_; ++i) 
+    {
       auto& e = idx.outputs()[i];
       output_arrays_.push_back(data_entry_[idx.entry_id(e)]);
     }
     // initialize head gradient array
     head_grad_array_.resize(symbol.outputs.size());
-    for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i) {
-      uint32_t nid = idx.input_nodes().at(i);
-      uint32_t oid = head_grad_map_.at(idx[nid].source);
-      head_grad_array_[oid] = data_entry_[idx.entry_id(nid, 0)];
+    for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i)
+    {
+       uint32_t nid = idx.input_nodes().at(i);
+       uint32_t oid = head_grad_map_.at(idx[nid].source);
+       head_grad_array_[oid] = data_entry_[idx.entry_id(nid, 0)];
     }
   }
 
