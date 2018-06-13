@@ -1077,8 +1077,8 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
   const auto& vstorage_type = g.GetAttr<StorageTypeVector>("storage_type");
 
   // data entries for output gradients
-//   得到每一个输出梯度的
- LOG(INFO)<<"  num_forward_outputs_   "<<num_forward_outputs_<<" idx.outputs().size() "<<idx.outputs().size();
+  //   得到每一个输出梯度的
+  LOG(INFO)<<"  num_forward_outputs_   "<<num_forward_outputs_<<" idx.outputs().size() "<<idx.outputs().size();
   for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
   {
      LOG(INFO)<< "  j===  "<<j;
@@ -1122,14 +1122,20 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     }
     //  设定了存储的类型
     g.attrs["storage"] = std::make_shared<dmlc::any>(std::move(arg_storage_id));
-    //  调用内存规划
+    //    调用内存规划，内存规划我们知道是采用了引用计数
+    //    原地计算， 引用计数的方法。
+    //    需要找不不同的关键路径，这些路径可以子啊执行的时候并行执行。
+    //    
+    LOG(INFO)<<" g = nnvm::ApplyPass(g, "PlanMemory")";
     g = nnvm::ApplyPass(g, "PlanMemory");
   }
+  LOG(INFO)<<" g = DetectInplaceAddTo(g);";
   g = DetectInplaceAddTo(g);
 
   // log the static memory plan of the graph
   static bool mem_log_verbose = dmlc::GetEnv("MXNET_MEM_PLAN_VERBOSE_LOGGING", false);
-  if (mem_log_verbose) {
+  if (mem_log_verbose) 
+  {
     common::LogMemoryPlan(g);
   }
 
@@ -1137,9 +1143,14 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
   AttachOpResources(g);
   graph_ = std::move(g);
 
-  if (shared_exec != nullptr) {
+  if (shared_exec != nullptr)
+  {
+    LOG(INFO)<<"this->InitDataEntryMemory(&(dynamic_cast<GraphExecutor*>(shared_exec)->data_pool_));";
     this->InitDataEntryMemory(&(dynamic_cast<GraphExecutor*>(shared_exec)->data_pool_));
-  } else {
+  }
+   else 
+  {
+    LOG(INFO)<<"this->InitDataEntryMemory(nullptr);";
     this->InitDataEntryMemory(nullptr);
   }
 
@@ -1158,7 +1169,12 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
       head_grad_array_[oid] = data_entry_[idx.entry_id(nid, 0)];
     }
   }
+
+
+  LOG(INFO)<<"this->InitCachedOps()";
   this->InitCachedOps();
+
+  LOG(INFO)<<"this->InitOpSegs();";
   this->InitOpSegs();
 }
 
