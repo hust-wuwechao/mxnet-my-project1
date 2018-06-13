@@ -1095,19 +1095,34 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
 
   {
     // memory allocator
+    LOG(INFO)<<"  idx.num_node_entries()   "<<idx.num_node_entries();
     nnvm::StorageVector arg_storage_id(idx.num_node_entries(), kBadStorageID);
-    for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) {
+    for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
+    {
+      // 表示其存储来自外部，而不是动态分配
       arg_storage_id[idx.entry_id(idx.outputs()[j])] = kExternalStorageID;
     }
-    for (const auto& kv : feed_dict) {
+    int  feednum=0;
+    for (const auto& kv : feed_dict)
+    {
       uint32_t eid = idx.entry_id(kv.first);
+       LOG(INFO)<<" eid =="<<eid;
       data_entry_[eid] = kv.second;
+      //
+      //LOG(INFO)<<" arg_storage_id 的大小"<<arg_storage_id.size();
       arg_storage_id[eid] = kExternalStorageID;
+      feednum++;
     }
-    for (size_t i = 0; i < idx.num_node_entries(); i++) {
-      if (vstorage_type[i] != kDefaultStorage) arg_storage_id[i] = kDynamicStorageID;
+    LOG(INFO)<<" feed_dict  数目 =="<<feednum;
+    LOG(INFO)<<" idx.num_node_entries()  "<<idx.num_node_entries();
+    for (size_t i = 0; i < idx.num_node_entries(); i++) 
+    {
+       if (vstorage_type[i] != kDefaultStorage)
+            arg_storage_id[i] = kDynamicStorageID;
     }
+    //  设定了存储的类型
     g.attrs["storage"] = std::make_shared<dmlc::any>(std::move(arg_storage_id));
+    //  调用内存规划
     g = nnvm::ApplyPass(g, "PlanMemory");
   }
   g = DetectInplaceAddTo(g);
