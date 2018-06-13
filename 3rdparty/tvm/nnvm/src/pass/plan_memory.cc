@@ -181,6 +181,10 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
   std::vector<GraphAllocator::StorageID> storage_ref_count(idx.num_node_entries(), 0);
 
 
+
+
+
+   //    //      
   LOG(INFO)<<" node_range.first  "<<node_range.first<<" node_range.second "<<node_range.second;
 
   for (uint32_t nid = node_range.first; nid < node_range.second; ++nid)
