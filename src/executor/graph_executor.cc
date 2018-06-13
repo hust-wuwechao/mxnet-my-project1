@@ -708,19 +708,26 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       in_arg_map_.emplace(arg_name, in_args[arg_top]);
 
       int  aa=0;
-
-      if (kNullOp != grad_req_types[arg_top]) aa=1;
+     
+      if (kNullOp != grad_req_types[arg_top])  aa=1;
 
       LOG(INFO)<<"kNullOp != grad_req_types[arg_top]      "<<aa;
       // 如果这个参数需要计算梯度
       if (kNullOp != grad_req_types[arg_top]) 
       {
         
+
         auto grad_oid = grad_store_.size() + num_forward_outputs_;
+           
         auto grad_eid = idx.entry_id(idx.outputs()[grad_oid]);
+
         arg_stypes[grad_eid] = arg_grad_store[arg_top].storage_type();
+
         grad_store_.emplace_back(grad_req_types[arg_top], arg_grad_store[arg_top]);
+
         arg_grad_map_.emplace(arg_name, arg_grad_store[arg_top]);
+
+         LOG(INFO)<<"   arg_top      "<<arg_top<<" grad_oid  "<<grad_oid<<"  grad_eid  "<<grad_eid<<"  grad_store_.size "<<grad_store_.size()<<"  arg_grad_map_  "<<arg_grad_map_.size();
         if (log_verbose_) {
           LOG(INFO) << "\tassign data entry\t" << grad_eid << " as "
                     << common::stype_string(arg_stypes[grad_eid]) << " (grad)";
