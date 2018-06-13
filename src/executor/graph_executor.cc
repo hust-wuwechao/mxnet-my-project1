@@ -344,7 +344,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   CHECK_EQ(g_grad.outputs.size(), xs.size());
   for (const auto &e : g_grad.outputs) 
   {
-    LOG(INFO)<<"g.outputs.push_back(e)里面的const auto &e : g_grad.outputs"<<e;
+    // LOG(INFO)<<"g.outputs.push_back(e)里面的const auto &e : g_grad.outputs"<<e;
     g.outputs.push_back(e);
   }
   LOG(INFO)<<"加入梯度之前"<<g.outputs.size();
