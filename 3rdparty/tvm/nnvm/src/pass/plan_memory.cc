@@ -331,7 +331,7 @@ Graph PlanMemory(Graph ret)
   {
     ref_count = ret.MoveCopyAttr<std::vector<uint32_t> >("ref_count");
   } 
-  else
+ else
  {  
     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
     ref_count.resize(idx.num_node_entries(), 0);
@@ -412,34 +412,51 @@ Graph PlanMemory(Graph ret)
       {
 
         //  对于一个节点的所有的输入，将其对应的输入的节点的计数加1
-        LOG(INFO)<<" 对于输入   idx.entry_id(e)"<<idx.entry_id(e);
-        // 得到这个实体真实的ID
         ++ref_count[idx.entry_id(e)];
+        LOG(INFO)<<" 对于输入   idx.entry_id(e) ======="<<idx.entry_id(e)<< "   对应的输入的节点的引用计数  "<<ref_count[idx.entry_id(e)] ;
+        // 得到这个实体真实的ID
+
+        
+
       }
       // no dataflow dependency is needed for those are ignored.
       // revoke the dependency counter.
+      int  a=0;
       if (fignore_inputs.count(inode.source->op()) != 0) 
       {
-
+         
         auto ignore_inputs = fignore_inputs[inode.source->op()](inode.source->attrs);
-      //  对于所以需要忽略的属性值，加一
+        //对于所以需要忽略的属性值，加一
         for (uint32_t i : ignore_inputs) 
          {
             --ref_count[idx.entry_id(inode.inputs[i])];
+            a++;
          }
        }
+      LOG(INFO)<<" fignore_inputs.count   这个节点对应的可以被忽略的输入的节点 " <<a;
+     LOG(INFO)<<"***********************************************************************************";
      }
      //    最后对于图里面的每一输出
      //  
      int  output_num=0; 
      for (const auto& e : idx.outputs())
      {
-      output_num++;
-      ++ref_count[idx.entry_id(e)];
-      LOG(INFO)<<"对于每一个输出结果"<<idx.entry_id(e)<<"  对应的引用计数为  "<<ref_count[idx.entry_id(e)];
+       output_num++;
+       ++ref_count[idx.entry_id(e)];
+       LOG(INFO)<<"对于每一个最后的输出结果   "<<idx.entry_id(e)<<"   对应的引用计数为  "<<ref_count[idx.entry_id(e)];
+
     }
+
     LOG(INFO)<<"索引图的输出结果个数为"<<output_num;
   }
+
+  //  我们最终输出索引图std::vector<uint32_t> ref_count;
+  for(int i=0;i<ref_count.size();i++)
+  {
+      LOG(INFO)<<"第 个节点  "<< i<<"对应的引用计数为：："<<ref_counref_count[i];
+  }
+
+
   // step 2: allocate memory.
 
 
@@ -453,38 +470,52 @@ Graph PlanMemory(Graph ret)
   } 
   else 
   {
+    LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
     storage.resize(idx.num_node_entries(), -1);
   }
 
   // Search the best NNVM_EXEC_MATCH_RANGE parameter. This is turned off by default
+  // 是不是按照范围进行匹配？？？？
   size_t min_allocated_bytes = -1;
   size_t max_match_range = dmlc::GetEnv("NNVM_EXEC_MATCH_RANGE", 16);
   size_t min_match_range =
          dmlc::GetEnv("NNVM_AUTO_SEARCH_MATCH_RANGE", false) ? 1 : max_match_range;
-  for (size_t match_range = min_match_range; match_range <= max_match_range; match_range *= 2) {
-    // Make a copy of related fields
-    StorageVector storage_vec(storage);
-    std::vector<int> storage_inplace_index(idx.num_node_entries(), -1);
 
+  for (size_t match_range = min_match_range; match_range <= max_match_range; match_range *= 2) 
+  {
+    // Make a copy of related fields
+    LOG(INFO)<<"match_range"<<match_range;
+    StorageVector storage_vec(storage);
+    LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
+    std::vector<int> storage_inplace_index(idx.num_node_entries(), -1);
     // the allocator
+    // 按照分配。。。。。。
     GraphAllocator allocator(&idx, match_range);
 
     // number of entries that are not statically allocated.
+    // 
+    LOG(INFO)<<"storage_num_not_allocated"<<storage_num_not_allocated;
     size_t storage_num_not_allocated =
-      AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,
-                  ref_count, &allocator);
+      AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
+    LOG(INFO)<<"storage_allocated_bytes"<<storage_allocated_bytes;
     size_t storage_allocated_bytes = allocator.TotalAllocBytes();
-
+    
     // Choose the plan which leads to minimal memory usage
-    if (min_allocated_bytes > storage_allocated_bytes) {
+    if (min_allocated_bytes > storage_allocated_bytes) 
+    {
       ret.attrs["storage_id"] = std::make_shared<any>(std::move(storage_vec));
+      // 所有的原地的索引
       ret.attrs["storage_inplace_index"] = std::make_shared<any>(std::move(storage_inplace_index));
+      //  所有的
       ret.attrs["storage_allocated_bytes"] = std::make_shared<any>(storage_allocated_bytes);
+
       ret.attrs["storage_num_not_allocated"] = std::make_shared<any>(storage_num_not_allocated);
+
       min_allocated_bytes = storage_allocated_bytes;
     }
 
-    if (max_match_range == 0) {
+    if (max_match_range == 0)
+     {
       break;
     }
   }

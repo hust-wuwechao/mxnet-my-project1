@@ -21,6 +21,7 @@
         "algorithm": "cpp",
         "hash_map": "cpp",
         "hash_set": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "chrono": "cpp"
     }
 }
