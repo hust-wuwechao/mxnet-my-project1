@@ -186,7 +186,7 @@ Graph Gradient(Graph src)
     // 获取到这个反向节点的梯度节点
     auto& out_grad_vec = output_grads.at(ptr.get());
 
-    LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
+    //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
 
     for (uint32_t i = 0; i < out_grad_vec.size(); ++i) 
     {
