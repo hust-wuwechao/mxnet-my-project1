@@ -1135,7 +1135,7 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     g = nnvm::ApplyPass(g, "PlanMemory");
   }
   LOG(INFO)<<" g = DetectInplaceAddTo(g);";
-  g = DetectInplaceAddTo(g);
+   g = DetectInplaceAddTo(g);
 
   // log the static memory plan of the graph
   static bool mem_log_verbose = dmlc::GetEnv("MXNET_MEM_PLAN_VERBOSE_LOGGING", false);
@@ -1144,9 +1144,16 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     common::LogMemoryPlan(g);
   }
 
+  LOG(INFO)<< "  g = AttachOpExecs(g);";
+
   g = AttachOpExecs(g);
+
+
+  LOG(INFO)<<"   AttachOpResources(g);";
   AttachOpResources(g);
+
   graph_ = std::move(g);
+
 
   if (shared_exec != nullptr)
   {
