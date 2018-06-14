@@ -494,11 +494,13 @@ Graph PlanMemory(Graph ret)
 
     // number of entries that are not statically allocated.
     // 
-    LOG(INFO)<<"storage_num_not_allocated"<<storage_num_not_allocated;
+   
     size_t storage_num_not_allocated =
       AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
-    LOG(INFO)<<"storage_allocated_bytes"<<storage_allocated_bytes;
+    LOG(INFO)<<"storage_num_not_allocated"<<storage_num_not_allocated;
+    
     size_t storage_allocated_bytes = allocator.TotalAllocBytes();
+    LOG(INFO)<<"storage_allocated_bytes"<<storage_allocated_bytes;
     
     // Choose the plan which leads to minimal memory usage
     if (min_allocated_bytes > storage_allocated_bytes) 
