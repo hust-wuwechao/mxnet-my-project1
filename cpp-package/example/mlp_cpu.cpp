@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
   {
     // arg.first is parameter name, and arg.second is the value
     i++;
-    LOG(INFO)<< initializer(arg.first, &arg.second);";
+    LOG(INFO)<<"  initializer(arg.first, &arg.second);  ";
     initializer(arg.first, &arg.second);
   }
   LOG(INFO)<<"参数的个数"<<i;
