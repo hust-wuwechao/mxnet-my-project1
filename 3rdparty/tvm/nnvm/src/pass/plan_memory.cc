@@ -346,7 +346,7 @@ Graph PlanMemory(Graph ret)
       //
 
        //          struct Node 
-       {
+      // {
           /*! \brief pointer to the source node */
         // const nnvm::Node* source;
           /*! \brief inputs to the node */
@@ -397,8 +397,7 @@ Graph PlanMemory(Graph ret)
 
      
 
-      LOG(INFO)<<"   对于节点nid    "<<nid;
-      
+      LOG(INFO)<<"   对于节点nid    "<<nid; 
       const auto& inode = idx[nid];   // 真实节点的ID   1,3,2,4,5，等
       const std::string& arg_name = inode.source->attrs.name;
       LOG(INFO)<<"这个节点的名字为"<<arg_name;
@@ -407,47 +406,53 @@ Graph PlanMemory(Graph ret)
       if (inode.source->is_variable()) continue;
       //  对于这个节点的每一个输入。
       //  其对应的引用加以
-      LOG(INFO)<<"   inode>>.inputs.size()   "<<inode>>.inputs.size();
+      LOG(INFO)<<"   inode.inputs.size()   "<<inode.inputs.size();
       
       for (const auto& e : inode.inputs)
       {
 
         //  对于一个节点的所有的输入，将其对应的输入的节点的计数加1
         LOG(INFO)<<" 对于输入   idx.entry_id(e)"<<idx.entry_id(e);
-
-
         // 得到这个实体真实的ID
         ++ref_count[idx.entry_id(e)];
-
       }
       // no dataflow dependency is needed for those are ignored.
       // revoke the dependency counter.
       if (fignore_inputs.count(inode.source->op()) != 0) 
       {
+
         auto ignore_inputs = fignore_inputs[inode.source->op()](inode.source->attrs);
+      //  对于所以需要忽略的属性值，加一
         for (uint32_t i : ignore_inputs) 
-        {
-          --ref_count[idx.entry_id(inode.inputs[i])];
-        }
-      }
-    }
-    for (const auto& e : idx.outputs()) {
+         {
+            --ref_count[idx.entry_id(inode.inputs[i])];
+         }
+       }
+     }
+     //    最后对于图里面的每一输出
+     //  
+     int  output_num=0; 
+     for (const auto& e : idx.outputs())
+     {
+      output_num++;
       ++ref_count[idx.entry_id(e)];
+      LOG(INFO)<<"对于每一个输出结果"<<idx.entry_id(e)<<"  对应的引用计数为  "<<ref_count[idx.entry_id(e)];
     }
+    LOG(INFO)<<"索引图的输出结果个数为"<<output_num;
   }
   // step 2: allocate memory.
 
 
-  //
 
-
-//
 
 
   StorageVector storage;
-  if (ret.attrs.count("storage") != 0) {
+  if (ret.attrs.count("storage") != 0) 
+  {
     storage = ret.MoveCopyAttr<StorageVector>("storage");
-  } else {
+  } 
+  else 
+  {
     storage.resize(idx.num_node_entries(), -1);
   }
 
