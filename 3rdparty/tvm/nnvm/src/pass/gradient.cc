@@ -178,7 +178,7 @@ Graph Gradient(Graph src)
   //  遍历拓扑排序
   for (auto rit = topo_order.rbegin(); rit != topo_order.rend(); ++rit) 
   {
-    LOG(INFO)<<"在pass  梯里面++rit"<<rit;
+    //LOG(INFO)<<"在pass  梯里面++rit"<<rit;
     // 获取到这个节点
     const NodePtr& ptr = *rit;
     if (ptr->is_variable()) continue;
