@@ -81,13 +81,13 @@ R-package/man/*.Rd
 R-package/R/mxnet_generated.R
 
 # data
-*.rec
-*.lst
-*.zip
-*ubyte
-*.bin
-*.txt
-!CMakeLists.txt
+#*.rec
+#*.lst
+#*.zip
+#*ubyte
+#*.bin
+#*.txt
+#!CMakeLists.txt
 
 # ipython notebook
 *_pb2.py
