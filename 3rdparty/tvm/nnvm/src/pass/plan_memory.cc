@@ -185,9 +185,9 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
   if (ret.attrs.count("device") != 0)
   {
      device_vec = &(ret.GetAttr<DeviceVector>("device"));
-     for(int i=0;i<device_vec.size();i++)
+     for(int i=0;i<device_vec->size();i++)
      {
-      LOG(INFO)<<"device_vecr   "<< i<<"设备为：："<<device_vec[i];
+      LOG(INFO)<<"device_vecr   "<< i<<"   设备为：： "<<device_vec[i];
      }
 
 
