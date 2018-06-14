@@ -453,7 +453,7 @@ Graph PlanMemory(Graph ret)
   //  我们最终输出索引图std::vector<uint32_t> ref_count;
   for(int i=0;i<ref_count.size();i++)
   {
-      LOG(INFO)<<"第 个节点  "<< i<<"对应的引用计数为：："<<ref_counref_count[i];
+      LOG(INFO)<<"第 个节点  "<< i<<"对应的引用计数为：："<<ref_count[i];
   }
 
 
