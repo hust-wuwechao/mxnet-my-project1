@@ -421,7 +421,7 @@ Graph PlanMemory(Graph ret)
       }
       // no dataflow dependency is needed for those are ignored.
       // revoke the dependency counter.
-      int  a=0;
+      int  a7=0;
       if (fignore_inputs.count(inode.source->op()) != 0) 
       {
          
@@ -430,10 +430,10 @@ Graph PlanMemory(Graph ret)
         for (uint32_t i : ignore_inputs) 
          {
             --ref_count[idx.entry_id(inode.inputs[i])];
-            a++;
+            a7++;
          }
        }
-      LOG(INFO)<<" fignore_inputs.count   这个节点对应的可以被忽略的输入的节点 " <<a;
+      LOG(INFO)<<" fignore_inputs.count   这个节点对应的可以被忽略的输入的节点 " <<a7;
      LOG(INFO)<<"***********************************************************************************";
      }
      //    最后对于图里面的每一输出
