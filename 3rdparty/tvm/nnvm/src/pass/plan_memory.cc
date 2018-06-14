@@ -203,7 +203,7 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
 
 
 
-   //    //      
+     
   LOG(INFO)<<" node_range.first  "<<node_range.first<<" node_range.second "<<node_range.second;
 
    //  这里里面 0-20
@@ -277,11 +277,12 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
     // 对于输出节点按照大小进行排序
     std::multimap<size_t, uint32_t> eids;
     // 最终得到了每一个输入实体和对应的维度的信息
+    //  为这个节点的每一个输出分配内存
     for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) 
     {
       //
       uint32_t eid = idx.entry_id(nid, index);
-
+      
       // only request memory for kBadStorageID
 
       if (storage[eid] == GraphAllocator::kBadStorageID)
@@ -329,28 +330,20 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
       // 如果在忽略额节点里面被找到，直接退出这一轮迭代过程
       if (std::binary_search(ignore_inputs.begin(), ignore_inputs.end(), i)) continue;
       //  每一个输入都是一个实体
-
       const auto& e = inode.inputs[i];
-
-      //  说明是返回一个实体对应的编号
-      
-      uint32_t eid = idx.entry_id(e);
-      
-      auto sid = storage[eid];
-      
+      //  说明是返回一个实体对应的编号   
+      uint32_t eid = idx.entry_id(e); 
+      auto sid = storage[eid];     
       //  获取到这个实体的对于的存储ID
-
       // storage_ref_count == 0 means it is taken by inplace op
-
+      LOG(INFO)<<"第"<<i<<"个输入"<<"对应的输入的实体为ID为"<<eid<<"  存储的ID为   "<<sid;
       if (sid < 0) continue;
-
-      // if we decrease it to zero, means we are ready to relase
+      //  if we decrease it to zero, means we are ready to relase
       //  一旦这个数据的输出节点的呗分配了内存，那么所有的输入节点的引用就会减少一个。
       //  一旦变成0 之后
       //  说明这个空间可以在输出都已经存在的情况下，输入
       --storage_ref_count[sid];
-
-      LOG(INFO)<<"第"<<i<<"个输入"<<"对应的输入的实体为ID为"<<eid<<"  存储的ID为   "<<sid<<"  对应的引用计数为  "<<storage_ref_count[sid];
+      LOG(INFO)<<"  对应的引用计数为  "<<storage_ref_count[sid];
       if (storage_ref_count[sid] == 0) 
       {
 
@@ -574,28 +567,37 @@ Graph PlanMemory(Graph ret)
          dmlc::GetEnv("NNVM_AUTO_SEARCH_MATCH_RANGE", false) ? 1 : max_match_range;
 
   
+
+  //  也就是说子啊不断的变换着分配的范围，哪一种分配需要的内存最少，就按照哪一种进行分配。
+
+
   for (size_t match_range = min_match_range; match_range <= max_match_range; match_range *= 2) 
   {
     // Make a copy of related fields
     LOG(INFO)<<"match_range"<<match_range;
     StorageVector storage_vec(storage);
     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
+
     std::vector<int> storage_inplace_index(idx.num_node_entries(), -1);
+
     // the allocator
     // 按照分配。。。。。。
     GraphAllocator allocator(&idx, match_range);
 
     // number of entries that are not statically allocated.
     // 
-   
+    
     size_t storage_num_not_allocated =
-      AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
+        AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
+
     LOG(INFO)<<"storage_num_not_allocated"<<storage_num_not_allocated;
     
     size_t storage_allocated_bytes = allocator.TotalAllocBytes();
+
     LOG(INFO)<<"storage_allocated_bytes"<<storage_allocated_bytes;
     
     // Choose the plan which leads to minimal memory usage
+    //
     if (min_allocated_bytes > storage_allocated_bytes) 
     {
       ret.attrs["storage_id"] = std::make_shared<any>(std::move(storage_vec));
