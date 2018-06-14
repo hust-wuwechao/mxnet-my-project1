@@ -163,18 +163,37 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
   // Get reference
   auto &storage = *storage_ptr;
   auto &storage_inplace_index = *storage_inplace_index_ptr;
+  for(int i=0;i<storage.size();i++)
+  {
+      LOG(INFO)<<"storage存储节点向量  "<< i<<"对应的引用计数为：："<<storage[i];
+  }
+  for(int i=0;i<storage_inplace_index.size();i++)
+  {
+      LOG(INFO)<<"storage_inplace_index存储节点向量  "<< i<<"对应的引用计数为：："<<storage_inplace_index[i];
+  }
 
   // Get attributes from the graph
   const ShapeVector& shape_vec = ret.GetAttr<ShapeVector>("shape");
   const DTypeVector& dtype_vec = ret.GetAttr<DTypeVector>("dtype");
   const DeviceVector* device_vec = nullptr;
-
+  for(int i=0;i<dtype_vec.size();i++)
+  {
+      LOG(INFO)<<"DTypeVector   "<< i<<"存储类型：："<<dtype_vec[i];
+  }
 
    // 如果设备已经分配好了
   if (ret.attrs.count("device") != 0)
-   {
-    device_vec = &(ret.GetAttr<DeviceVector>("device"));
+  {
+     device_vec = &(ret.GetAttr<DeviceVector>("device"));
+     for(int i=0;i<device_vec.size();i++)
+     {
+      LOG(INFO)<<"device_vecr   "<< i<<"设备为：："<<device_vec[i];
+     }
+
+
   }
+
+
   size_t num_not_allocated = 0;
   LOG(INFO)<<" idx.num_node_entries()  "<<idx.num_node_entries();
   // 这里面应该是27   
@@ -187,17 +206,30 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
    //    //      
   LOG(INFO)<<" node_range.first  "<<node_range.first<<" node_range.second "<<node_range.second;
 
+   //  这里里面 0-20
+   //  遍历每一个节点
   for (uint32_t nid = node_range.first; nid < node_range.second; ++nid)
-   {
+  {
+     
+    LOG(INFO)<<" **********************************************************************************";
+    LOG(INFO)<<"nid======="<<nid;
     const auto& inode = idx[nid];
+    const std::string& arg_name = inode.source->attrs.name;
+    LOG(INFO)<<"这个节点的名字为"<<arg_name;
     if (inode.source->is_variable()) continue;
     // check inplace option
     // 检查是不是可以进行原地操作。
     // 原地操作的条件是？？？？？？
-    if (finplace_option.count(inode.source->op()) != 0) {
+    
+    if (finplace_option.count(inode.source->op()) != 0) 
+    {
+      //  
       auto inplace_pairs = finplace_option[inode.source->op()](inode.source->attrs);
+
       std::vector<bool> identity;
-      if (finplace_identity.count(inode.source->op()) != 0) {
+
+      if (finplace_identity.count(inode.source->op()) != 0) 
+      {
         identity = finplace_identity[inode.source->op()](inode.source->attrs);
         CHECK_EQ(identity.size(), inplace_pairs.size())
             << "FInplaceOption and FInplaceIdentity returned vectors of different "
@@ -208,7 +240,8 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
         identity = std::vector<bool>(inplace_pairs.size(), false);
       }
       std::vector<bool> taken(inode.inputs.size(), false);
-      for (size_t ipair = 0; ipair < inplace_pairs.size(); ++ipair) {
+      for (size_t ipair = 0; ipair < inplace_pairs.size(); ++ipair) 
+      {
         const auto& kv = inplace_pairs[ipair];
         uint32_t eid_out = idx.entry_id(nid, kv.second);
         uint32_t eid_in = idx.entry_id(inode.inputs[kv.first]);
@@ -239,65 +272,121 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
     // normal allocation
     // 节点的正常分配
     const int dev_id = (device_vec != nullptr) ? device_vec->at(nid) : 0;
-    // sort output nodes based on size before allocating output
 
+    // sort output nodes based on size before allocating output
     // 对于输出节点按照大小进行排序
     std::multimap<size_t, uint32_t> eids;
-    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) {
+    // 最终得到了每一个输入实体和对应的维度的信息
+    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) 
+    {
+      //
       uint32_t eid = idx.entry_id(nid, index);
+
       // only request memory for kBadStorageID
-      if (storage[eid] == GraphAllocator::kBadStorageID) {
+
+      if (storage[eid] == GraphAllocator::kBadStorageID)
+      {
         auto &eshape = shape_vec[eid];
+        // 数据的维度
         size_t esize = 0;
-        if (eshape.ndim() != 0) esize = eshape.Size();
+        if (eshape.ndim() != 0) 
+            esize = eshape.Size();
+        //  插入维度和
         eids.insert(std::make_pair(esize, eid));
       }
     }
-    for (auto rit = eids.rbegin(); rit != eids.rend(); ++rit) {
+
+    //  这里面遍历刚才得到的每一个输入的维度。
+    for (auto rit = eids.rbegin(); rit != eids.rend(); ++rit)
+    {
+        
         uint32_t eid = rit->second;
+        // 向分配器请求（设备ID，类型，形状，以及节点的）
         auto sid = allocator->Request(dev_id, dtype_vec[eid], shape_vec[eid], nid);
-        if (sid >= 0) {
-          storage_ref_count[sid] = entry_ref_count[eid];
+        //  如果返回分配成功的话，返回存储号
+        if (sid >= 0) 
+        {
+           // 这个存储号码对应有多少引用，按时这个的实体对于的引用数目。
+           storage_ref_count[sid] = entry_ref_count[eid];
         }
+        //  实体ID和存储ID之间的对应关系在此
         storage[eid] = sid;
     }
     // check if certain inputs is ignored.
     std::vector<uint32_t> ignore_inputs;
-    if (fignore_inputs.count(inode.source->op()) != 0) {
+    if (fignore_inputs.count(inode.source->op()) != 0) 
+    {
+      //  如果这个节点所呼略的输入不等于o  那么进行排序
       ignore_inputs = fignore_inputs[inode.source->op()](inode.source->attrs);
       std::sort(ignore_inputs.begin(), ignore_inputs.end());
     }
     // then free inputs
-    for (size_t i = 0; i < inode.inputs.size(); ++i) {
+    //  一旦这个节点被正确的分配
+    LOG(INFO)<<"这个节点的输入节点个数为"<<inode.inputs.size();
+    for (size_t i = 0; i < inode.inputs.size(); ++i) 
+    {
       // ref counter of ignored input is already decreased.
+      // 如果在忽略额节点里面被找到，直接退出这一轮迭代过程
       if (std::binary_search(ignore_inputs.begin(), ignore_inputs.end(), i)) continue;
+      //  每一个输入都是一个实体
+
       const auto& e = inode.inputs[i];
+
+      //  说明是返回一个实体对应的编号
+      
       uint32_t eid = idx.entry_id(e);
+      
       auto sid = storage[eid];
+      
+      //  获取到这个实体的对于的存储ID
+
       // storage_ref_count == 0 means it is taken by inplace op
+
       if (sid < 0) continue;
+
       // if we decrease it to zero, means we are ready to relase
+      //  一旦这个数据的输出节点的呗分配了内存，那么所有的输入节点的引用就会减少一个。
+      //  一旦变成0 之后
+      //  说明这个空间可以在输出都已经存在的情况下，输入
       --storage_ref_count[sid];
-      if (storage_ref_count[sid] == 0) {
+
+      LOG(INFO)<<"第"<<i<<"个输入"<<"对应的输入的实体为ID为"<<eid<<"  存储的ID为   "<<sid<<"  对应的引用计数为  "<<storage_ref_count[sid];
+      if (storage_ref_count[sid] == 0) 
+      {
+
         allocator->Release(sid, nid);
+
+
       }
     }
     // check if there are outputs that can be freeded immediately
     // these output are not referenced by any operator.
-    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) {
+    LOG(INFO)<<" 这个节点的  nid"<<nid<<"   inode.source->num_outputs()   "<< inode.source->num_outputs();
+    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) 
+    {
+      //  这个节点的所有的输出节点
+      
       uint32_t eid = idx.entry_id(nid, index);
+      LOG(INFO)<<nid<<"第"<<index<<"个输出节点为eid=="<<eid;
       auto sid = storage[eid];
-      if (sid >= 0 && storage_ref_count[sid] == 0) {
+      //  如果引用计数等于0 的话
+      if (sid >= 0 && storage_ref_count[sid] == 0) 
+      {
+        // 直接释放
         allocator->Release(sid, nid);
         // use -2 to indicate that the node was never touched.
         storage_inplace_index[eid] = -2;
       }
-      if (storage[eid] == GraphAllocator::kBadStorageID) {
-        ++num_not_allocated;
+      if (storage[eid] == GraphAllocator::kBadStorageID)
+      {
+          ++num_not_allocated;
       }
     }
   }
+  //还没有进行分配 的节点数目
+
   return num_not_allocated;
+  LOG(INFO)<< "  num_not_allocated  "<<num_not_allocated;
 }
 
 
@@ -334,7 +423,9 @@ Graph PlanMemory(Graph ret)
  else
  {  
     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
+
     ref_count.resize(idx.num_node_entries(), 0);
+
     for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
     {
       // 结果为Node
@@ -470,8 +561,9 @@ Graph PlanMemory(Graph ret)
   } 
   else 
   {
-    LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
-    storage.resize(idx.num_node_entries(), -1);
+
+     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
+     storage.resize(idx.num_node_entries(), -1);
   }
 
   // Search the best NNVM_EXEC_MATCH_RANGE parameter. This is turned off by default
@@ -481,6 +573,7 @@ Graph PlanMemory(Graph ret)
   size_t min_match_range =
          dmlc::GetEnv("NNVM_AUTO_SEARCH_MATCH_RANGE", false) ? 1 : max_match_range;
 
+  
   for (size_t match_range = min_match_range; match_range <= max_match_range; match_range *= 2) 
   {
     // Make a copy of related fields
