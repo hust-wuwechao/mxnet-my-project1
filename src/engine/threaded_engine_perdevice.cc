@@ -109,7 +109,8 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
      else 
      
      {
-      if (ctx.dev_mask() == Context::kCPU) {
+      if (ctx.dev_mask() == Context::kCPU)
+      {
         if (opr_block->opr->prop == FnProperty::kCPUPrioritized) 
         { //优先的队列设计
 
@@ -121,16 +122,20 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
 
           int dev_id = ctx.dev_id;
           int nthread = cpu_worker_nthreads_;
-          // 新建立线程池
+          // 我们其实发现
+          //  这里面会先
           auto ptr =
-          cpu_normal_workers_.Get(dev_id, [this, ctx, nthread]() {
+          cpu_normal_workers_.Get(dev_id, [this, ctx, nthread]() 
+          {
               auto blk = new ThreadWorkerBlock<kWorkerQueue>();
               blk->pool.reset(new ThreadPool(nthread,
-                  [this, ctx, blk](std::shared_ptr<dmlc::ManualEvent> ready_event) {
+                  [this, ctx, blk](std::shared_ptr<dmlc::ManualEvent> ready_event) 
+                  {
                     this->CPUWorker(ctx, blk, ready_event);
                   }, true));
             return blk;
-          });
+          }
+          );
           if (ptr) 
           {
             if (opr_block->opr->prop == FnProperty::kDeleteVar) 
@@ -143,13 +148,20 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
             }
           }
         }
-      } else {
+      }
+      //  如果是在GPU上面。
+       else 
+       {
         CHECK_EQ(ctx.dev_mask(), Context::kGPU);
         // GPU execution.
         const FnProperty prop = opr_block->opr->prop;
+
         const bool is_copy = (prop == FnProperty::kCopyFromGPU ||
                               prop == FnProperty::kCopyToGPU);
+        LOG(INFO)<<"is_copy"<<is_copy;                      
         const size_t nthread = gpu_worker_nthreads_;
+        LOG(INFO)<<"gpu_worker_nthreads_"<<gpu_worker_nthreads_;
+        
         if (is_copy) {
           auto ptr = gpu_copy_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() {
             // Signify to kernel that GPU is being used, so reserve cores as necessary
@@ -170,19 +182,31 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
               ptr->task_queue.Push(opr_block, opr_block->priority);
             }
           }
-        } else {
-          auto ptr = gpu_normal_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() {
+        }
+         else 
+         {
+          //      核心是得到对应的队列。
+          //  
+          LOG(INFO)<<"gpu_normal_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]()";    
+          auto ptr = gpu_normal_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() 
+          {
             // Signify to kernel that GPU is being used, so reserve cores as necessary
-            OpenMP::Get()->set_reserve_cores(GetReserveCoreCount(true));
+              OpenMP::Get()->set_reserve_cores(GetReserveCoreCount(true));
               auto blk = new ThreadWorkerBlock<kWorkerQueue>();
-              blk->pool.reset(new ThreadPool(
+              blk->pool.reset(new ThreadPool
+              (
                 nthread,
                 [this, ctx, is_copy, blk]
-                  (std::shared_ptr<dmlc::ManualEvent> ready_event) {
+                  (std::shared_ptr<dmlc::ManualEvent> ready_event) 
+                  {
                     this->GPUWorker(ctx, is_copy, blk, ready_event);
-                  }, true));
+                  }, 
+                  true
+              )
+                              );
               return blk;
-          });
+          }
+          );
           if (ptr) {
             if (opr_block->opr->prop == FnProperty::kDeleteVar) {
               ptr->task_queue.PushFront(opr_block, opr_block->priority);

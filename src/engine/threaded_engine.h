@@ -97,7 +97,8 @@ struct OprBlock : public common::ObjectPoolAllocatable<OprBlock> {
  *  This is a basic unit of LinkedList in the ThreadedVar.
  */
 struct VersionedVarBlock
-    : public common::ObjectPoolAllocatable<VersionedVarBlock> {
+    : public common::ObjectPoolAllocatable<VersionedVarBlock> 
+    {
   /*! \brief next block in the LinkedList */
   VersionedVarBlock* next{nullptr};
   /*! \brief the operation this block triggers */
@@ -111,9 +112,11 @@ struct VersionedVarBlock
 /*!
  * \brief Variable implementation.
  *  Each ThreadedVar is a linked list(queue) of operations to be performed.
+ *  对于一个线程变量。
  */
 class ThreadedVar final
-    : public Var, public common::ObjectPoolAllocatable<ThreadedVar> {
+    : public Var, public common::ObjectPoolAllocatable<ThreadedVar> 
+    {
  public:
   /*!
    * \brief constructor
@@ -188,6 +191,7 @@ class ThreadedVar final
    *  will be marked as -1 when there is a already triggered pending write.
    */
   int num_pending_reads_{0};
+
   /*!
    * \brief Points to the last VersionedVarBlock in the queue.
    *  head_ always points to a empty VersionedVarBlock.
@@ -197,6 +201,9 @@ class ThreadedVar final
    *    3) move head to head->next.
    */
   VersionedVarBlock* head_{nullptr};
+
+
+
   /*!
    * \brief The pointer to next write to perform.
    *  This pointer will only be updated when the write completes.
@@ -276,7 +283,12 @@ class ThreadedEngine : public Engine {
                            const char* opr_name = nullptr,
                            bool wait = false) override;
   void DeleteOperator(OprHandle op) override;
+
   void Push(OprHandle op, Context exec_ctx, int priority = 0, bool profiling = false) override;
+
+  // push到队列里面，包含了函数体，执行的上下文，以及需要读取的变量，需要写的变量。函数的属性，优先级，函数的名字，是不是在等待。
+  //  对于一个变量的占用是非常的粗粒度的。
+
   void PushAsync(AsyncFn exec_fun, Context exec_ctx,
                  std::vector<VarHandle> const& const_vars,
                  std::vector<VarHandle> const& mutable_vars,
@@ -284,6 +296,8 @@ class ThreadedEngine : public Engine {
                  int priority = 0,
                  const char* opr_name = nullptr,
                  bool wait = false) override;
+
+  //  同步的加入队列。
   void PushSync(SyncFn exec_fn, Context exec_ctx,
                 std::vector<VarHandle> const& const_vars,
                 std::vector<VarHandle> const& mutable_vars,
@@ -293,7 +307,8 @@ class ThreadedEngine : public Engine {
   void DeleteVariable(SyncFn delete_fn, Context exec_ctx, VarHandle var) override;
   void WaitForVar(VarHandle var) override;
   void WaitForAll() override;
-  void NotifyShutdown() override {
+  void NotifyShutdown() override 
+  {
     shutdown_phase_.store(true);
   }
 
@@ -331,6 +346,7 @@ class ThreadedEngine : public Engine {
    *  This function also deletes the opr_block after execution.
    * \param run_ctx runtime context used to execute the function.
    * \param opr_block the opr_block to be executed and deleted.
+   * 调用他真实的执行。
    */
   void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block) {
     ThreadedOpr* threaded_opr = opr_block->opr;
@@ -406,13 +422,17 @@ class ThreadedEngine : public Engine {
   int set_bulk_size(int bulk_size) override {
     BulkStatus& bulk_status = *BulkStatusStore::Get();
     std::swap(bulk_status.bulk_size, bulk_size);
-    if (bulk_status.count >= bulk_status.bulk_size) BulkFlush();
+    if (bulk_status.count >= bulk_status.bulk_size) 
+       BulkFlush();
     return bulk_size;
   }
 
  private:
-  /*! \brief structure for holding bulk execution status */
-  struct BulkStatus {
+  /*! \brief structure for holding bulk execution status 
+      表示多个OP 构成的块。
+      */
+  struct BulkStatus 
+  {
     /*! \brief maximum number of ops per bulk */
     int bulk_size = 0;
     /*! \brief current number of ops in bulk */
@@ -432,6 +452,7 @@ class ThreadedEngine : public Engine {
    * \brief check if thee is duplication in const_vars and mutable_vars.
    * \param const_vars the variables to read from.
    * \param mutable_vars the variables to mutate.
+   * 检查变量是不是具有重复的特点。
    */
   void CheckDuplicate(std::vector<VarHandle> const& const_vars,
                       std::vector<VarHandle> const& mutable_vars);
@@ -451,17 +472,23 @@ class ThreadedEngine : public Engine {
    *
    * Will mark the operator as a failure and associate exception_ptr
    * if any of the read dependencies have exception associated.
+   * 如果读写已经具有异常
+   * 那么这个threaded_opr 会同样设置异常、
    */
   inline void OnStart(ThreadedOpr* threaded_opr) {
-    for (auto&& i : threaded_opr->const_vars) {
-      if (i->var_exception && *i->var_exception) {
+    for (auto&& i : threaded_opr->const_vars)
+     {
+      if (i->var_exception && *i->var_exception)
+      {
         threaded_opr->opr_exception = i->var_exception;
         break;
       }
     }
-    if (!(threaded_opr->opr_exception && *threaded_opr->opr_exception)) {
+    if (!(threaded_opr->opr_exception && *threaded_opr->opr_exception))
+     {
       for (auto&& i : threaded_opr->mutable_vars) {
-        if (i->var_exception && *i->var_exception) {
+        if (i->var_exception && *i->var_exception) 
+        {
           threaded_opr->opr_exception = i->var_exception;
           break;
         }
@@ -475,12 +502,16 @@ class ThreadedEngine : public Engine {
                          std::vector<VarHandle> const& const_vars,
                          std::vector<VarHandle> const& mutable_vars) {
     BulkStatus& bulk_status = *BulkStatusStore::Get();
-    if (!bulk_status.count) {
+    if (!bulk_status.count) 
+    {
       bulk_status.ctx = exec_ctx;
       bulk_status.fn = std::move(exec_fn);
-    } else {
+    } 
+    else 
+    {
       auto prev_fn = std::move(bulk_status.fn);
-      bulk_status.fn = [exec_fn, prev_fn](RunContext rctx) {
+      bulk_status.fn = [exec_fn, prev_fn](RunContext rctx)
+       {
           prev_fn(rctx);
           exec_fn(rctx);
         };
@@ -495,18 +526,19 @@ class ThreadedEngine : public Engine {
     if (bulk_status.count >= bulk_status.bulk_size) BulkFlush();
   }
   /*! \brief flush current bulk to execution */
-  inline void BulkFlush() {
+  inline void BulkFlush() 
+  {
     BulkStatus& bulk_status = *BulkStatusStore::Get();
     if (!bulk_status.count) return;
     bulk_status.count = 0;
     DeduplicateVarHandle(&bulk_status.const_vars, &bulk_status.mutable_vars);
     SyncFn fn = std::move(bulk_status.fn);
-    this->PushAsync([fn](RunContext ctx, CallbackOnComplete on_complete) {
+    this->PushAsync([fn](RunContext ctx, CallbackOnComplete on_complete) 
+      {
         fn(ctx);
         on_complete();
       }, bulk_status.ctx, bulk_status.const_vars, bulk_status.mutable_vars,
       FnProperty::kNormal, 0, "ImperativeBulk");
-
     bulk_status.const_vars.clear();
     bulk_status.mutable_vars.clear();
   }

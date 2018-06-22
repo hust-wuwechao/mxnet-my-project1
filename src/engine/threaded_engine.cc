@@ -280,7 +280,7 @@ void ThreadedEngine::DeleteOperator(OprHandle op) {
 
 void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool profiling) 
 {
-
+  // 刷新当前的块去执行
   BulkFlush();
   //创建一个新的 ThreadedOpr核心是里面的操作是OP
   ThreadedOpr* threaded_opr = ThreadedOpr::CastFromBase(op);
@@ -304,12 +304,14 @@ void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool pro
   {
      
     i->AppendReadDependency(opr_block);
+
   }
   // Add write dependencies.
   for (auto&& i : threaded_opr->mutable_vars) 
   {
    
     i->AppendWriteDependency(opr_block);
+
   }
   //  这里面只会加入的时候判断一次。
   //  二并不是采用轮训来看是不是等于零在加入。
@@ -318,6 +320,7 @@ void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool pro
     // 如果这个OP块所依赖的变量的数目变为0
      
     this->PushToExecute(opr_block, true);
+    
   }
 
 }

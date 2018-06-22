@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
   auto *exec = net.SimpleBind(ctx, args);
   // 
   auto arg_names = net.ListArguments();
-
+  LOG(INFO)<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
   for (auto& arg_list:arg_names )
 {
 

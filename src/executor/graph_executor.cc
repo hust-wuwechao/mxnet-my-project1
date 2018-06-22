@@ -1921,7 +1921,8 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
   }
 }
 
-GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start, size_t topo_end) {
+GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start, size_t topo_end)
+ {
   std::vector<Engine::VarHandle> use_vars;
   std::vector<Engine::VarHandle> mutate_vars;
   Context *pctx = nullptr;
@@ -1949,6 +1950,7 @@ GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start,
     if (*pctx != op_node.ctx) {
       return ret;
     }
+
     auto& exec = op_nodes_[nid].exec;
     std::copy(op_node.mutate_vars.begin(), op_node.mutate_vars.end(),
               std::inserter(mutate_vars, mutate_vars.end()));
@@ -1989,6 +1991,8 @@ GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start,
 }
 }  // namespace exec
 
+
+
 Executor *Executor::SimpleBind(nnvm::Symbol symbol,
                                const Context& default_ctx,
                                const std::map<std::string, Context>& group2ctx,
@@ -2004,8 +2008,11 @@ Executor *Executor::SimpleBind(nnvm::Symbol symbol,
                                std::vector<NDArray>* arg_grads,
                                std::vector<NDArray>* aux_states,
                                std::unordered_map<std::string, NDArray>* shared_buffer,
-                               Executor* shared_exec) {
+                               Executor* shared_exec) 
+  {
+  //  这里面自然会调用GraphExecutor()的构造函数。
   auto exec = new exec::GraphExecutor();
+
   exec->Init(symbol, default_ctx, group2ctx,
              in_arg_ctxes, arg_grad_ctxes, aux_state_ctxes,
              arg_shape_map, arg_dtype_map, arg_stype_map,
