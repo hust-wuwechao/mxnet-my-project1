@@ -501,7 +501,7 @@ Graph PlanMemory(Graph ret)
         // 得到这个实体真实的ID
       }
 
-       for (const auto& e : inode.outputs)
+      /* for (const auto& e : inode.outputs)
       {
 
         //  对于一个节点的所有的输入，将其对应的输入的节点的计数加1
@@ -509,6 +509,7 @@ Graph PlanMemory(Graph ret)
         LOG(INFO)<<" 对于输出   idx.entry_id(e) ======="<<idx.entry_id(e)<< "   对应的输入的节点的引用计数  "<<ref_count[idx.entry_id(e)] ;
         // 得到这个实体真实的ID
       }
+      */
 
 
       // no dataflow dependency is needed for those are ignored.
