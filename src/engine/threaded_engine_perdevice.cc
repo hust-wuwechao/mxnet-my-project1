@@ -51,10 +51,12 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
   static auto constexpr kPriorityQueue = kPriority;
   static auto constexpr kWorkerQueue = kFIFO;
 
-  ThreadedEnginePerDevice() noexcept(false) {
+  ThreadedEnginePerDevice() noexcept(false) 
+  {
     this->Start();
   }
-  ~ThreadedEnginePerDevice() noexcept(false) {
+  ~ThreadedEnginePerDevice() noexcept(false) 
+  {
     this->StopNoWait();
   }
 
@@ -74,16 +76,27 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
 
   void Start() override {
     if (is_worker_) return;
+
     gpu_worker_nthreads_ = common::GetNumThreadsPerGPU();
+
     cpu_worker_nthreads_ = dmlc::GetEnv("MXNET_CPU_WORKER_NTHREADS", 1);
+
     // create CPU task
     int cpu_priority_nthreads = dmlc::GetEnv("MXNET_CPU_PRIORITY_NTHREADS", 4);
+    //td::unique_ptr<ThreadWorkerBlock<kPriorityQueue>> mxnet::engine::ThreadedEnginePerDevice::cpu_priority_worker_
     cpu_priority_worker_.reset(new ThreadWorkerBlock<kPriorityQueue>());
+
     cpu_priority_worker_->pool.reset(new ThreadPool(
         cpu_priority_nthreads,
-        [this](std::shared_ptr<dmlc::ManualEvent> ready_event) {
+        [this](std::shared_ptr<dmlc::ManualEvent> ready_event) 
+        {
+          //  线程的所作的匿名函数。
+          // 
           this->CPUWorker(Context(), cpu_priority_worker_.get(), ready_event);
-        }, true));
+        },
+         true
+         )
+         );
     // GPU tasks will be created lazily
   }
 
@@ -105,34 +118,55 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
       this->ExecuteOprBlock(RunContext{ctx, nullptr}, opr_block);
 
     }
-    
-     else 
-     
+     else  
      {
+      //  如果是在CPU上面执行的话。
       if (ctx.dev_mask() == Context::kCPU)
       {
+        /**
+         * enum class FnProperty {
+              /*! \brief Normal operation 
+              */
+             // kNormal,
+              /*! \brief Copy operation from GPU to other devices */
+              //kCopyFromGPU,
+              /*! \brief Copy operation from CPU to other devices */
+              //kCopyToGPU,
+              /*! \brief Prioritized sync operation on CPU */
+              //kCPUPrioritized,
+              /*! \brief Asynchronous function call */
+             // kAsync,
+              /*! \brief Delete variable call */
+             // kDeleteVar
+           // };  // enum class FnProperty
+        
+        // 如果是Prioritized sync operation on CPU
         if (opr_block->opr->prop == FnProperty::kCPUPrioritized) 
-        { //优先的队列设计
-
+        { 
+          //优先的队列设计
           LOG(INFO)<<"enter cpu_priority_worker_->task_queue.Push(opr_block, opr_block->priority); ";
+          // 计算机学会通讯2018年第五期
           cpu_priority_worker_->task_queue.Push(opr_block, opr_block->priority);
         } 
         else 
         {
-
           int dev_id = ctx.dev_id;
           int nthread = cpu_worker_nthreads_;
           // 我们其实发现
           //  这里面会先
+          LOG(INFO)<<"ptr->task_queue.Push(opr_block, opr_block->priority);"
           auto ptr =
           cpu_normal_workers_.Get(dev_id, [this, ctx, nthread]() 
           {
+              //   新构造一个线程workerblock
               auto blk = new ThreadWorkerBlock<kWorkerQueue>();
+              //   
               blk->pool.reset(new ThreadPool(nthread,
                   [this, ctx, blk](std::shared_ptr<dmlc::ManualEvent> ready_event) 
                   {
                     this->CPUWorker(ctx, blk, ready_event);
-                  }, true));
+                  }, 
+              true));
             return blk;
           }
           );
@@ -158,10 +192,11 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
 
         const bool is_copy = (prop == FnProperty::kCopyFromGPU ||
                               prop == FnProperty::kCopyToGPU);
-        LOG(INFO)<<"is_copy"<<is_copy;                      
+        LOG(INFO)<<"is_copy"<<is_copy; 
+
         const size_t nthread = gpu_worker_nthreads_;
+
         LOG(INFO)<<"gpu_worker_nthreads_"<<gpu_worker_nthreads_;
-        
         if (is_copy) {
           auto ptr = gpu_copy_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() {
             // Signify to kernel that GPU is being used, so reserve cores as necessary
@@ -192,7 +227,9 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
           {
             // Signify to kernel that GPU is being used, so reserve cores as necessary
               OpenMP::Get()->set_reserve_cores(GetReserveCoreCount(true));
+
               auto blk = new ThreadWorkerBlock<kWorkerQueue>();
+
               blk->pool.reset(new ThreadPool
               (
                 nthread,
@@ -203,14 +240,17 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
                   }, 
                   true
               )
-                              );
+              );
               return blk;
           }
           );
-          if (ptr) {
-            if (opr_block->opr->prop == FnProperty::kDeleteVar) {
+          if (ptr)
+           {
+            if (opr_block->opr->prop == FnProperty::kDeleteVar) 
+            {
               ptr->task_queue.PushFront(opr_block, opr_block->priority);
-            } else {
+            } else 
+            {
               ptr->task_queue.Push(opr_block, opr_block->priority);
             }
           }
@@ -222,7 +262,8 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
  private:
   // working unit for each of the task.
   template<dmlc::ConcurrentQueueType type>
-  struct ThreadWorkerBlock {
+  struct ThreadWorkerBlock
+   {
     // task queue on this task
     dmlc::ConcurrentBlockingQueue<OprBlock*, type>  task_queue;
     // thread pool that works on this task
@@ -252,43 +293,75 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
    * \param dev_id The device id of the worker.
    * \param is_copy_worker whether the worker only do copy job
    * \param block The task block of the worker.
+   * 
+   * 用所有的任务块来构造一个GPUworker，实际上是不断每一个线程都要做到做的事情。
+   * 
    */
   template<dmlc::ConcurrentQueueType type>
-  inline void GPUWorker(Context ctx,
+  inline void GPUWorker(Context ctx,  
                         bool is_copy_worker,
                         ThreadWorkerBlock<type> *block,
-                        const std::shared_ptr<dmlc::ManualEvent>& ready_event) {
+                        const std::shared_ptr<dmlc::ManualEvent>& ready_event) 
+  {
+    LOG(INFO)<<"GPUWorker";
     this->is_worker_ = true;
-#if MXNET_USE_CUDA
+    #if MXNET_USE_CUDA
     CHECK(block != nullptr);
     mshadow::Stream<gpu> *stream;
-    do {
+    //  也就是说：
+    //  一个GPU总共也是只有2个流来使用。
+    do 
+    {
+
       ThreadPool::SetReadyOnDestroy setReady(ready_event);
       // allocate stream
       mshadow::SetDevice<gpu>(ctx.dev_id);
-      if (is_copy_worker) {
+      //  第一个作业。
+      LOG(INFO)<<"is_copy_worker"<<is_copy_worker;
+
+      if (is_copy_worker)
+      {
+        //  c创建一个复制流
         stream = mshadow::NewStream<gpu>(false, false, ctx.dev_id);
-      } else {
+      }
+      else  //  工作worker
+      {
+        // 创建一个工作流
         stream = mshadow::NewStream<gpu>(true, MXNET_USE_CUDNN != 0, ctx.dev_id);
       }
+
     } while (false);
     // execute task
+
     OprBlock* opr_block;
+    //  合成上下文
+
     RunContext run_ctx{ctx, stream};
+
+    //  获取任务队列
     auto* task_queue = &(block->task_queue);
 
     // Don't eat up omp threads for GPU jobs.  They're probably best used elsewhere,
     // for example for image decoding or the optimizer pass
     OpenMP::Get()->on_start_worker_thread(false);
+    //  只要任务队列部位空，那么自然
+    //  从任务队列里面弹出一个OP。放到opr_block
+    //  然后去执行
+    //  执行完毕后，继续查看队列是不是为空
+    //  如果为空，那么接着执行获取任务，实现了线程的共享。
 
-    while (task_queue->Pop(&opr_block)) {
+    while (task_queue->Pop(&opr_block))
+    {
+      //    只要任务队列不空，不断调度执行
+      //    this应该表示本线程了。
+      //     
       this->ExecuteOprBlock(run_ctx, opr_block);
     }
     // Catch exception for CUDA driver shutdown
     MSHADOW_CATCH_ERROR(mshadow::DeleteStream<gpu>(stream));
-#else
+    #else
     ready_event->signal();
-#endif
+    #endif
   }
   /*!
    * \brief CPU worker that performs operations on CPU.
@@ -297,19 +370,28 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
   template<dmlc::ConcurrentQueueType type>
   inline void CPUWorker(Context ctx,
                         ThreadWorkerBlock<type> *block,
-                        const std::shared_ptr<dmlc::ManualEvent>& ready_event) {
+                        const std::shared_ptr<dmlc::ManualEvent>& ready_event) 
+  {
+    LOG(INFO)<<"CPUWorker";
     this->is_worker_ = true;
+    //  dmlc::ConcurrentBlockingQueue<OprBlock*,type> mxnet::engine
     auto* task_queue = &(block->task_queue);
+
     RunContext run_ctx{ctx, nullptr};
 
     // execute task
+
     OprBlock* opr_block;
+
     ready_event->signal();
 
     // Set default number of threads for OMP parallel regions initiated by this thread
     OpenMP::Get()->on_start_worker_thread(true);
-
-    while (task_queue->Pop(&opr_block)) {
+    //  循环不断获取任务执行。
+    //  
+    while (task_queue->Pop(&opr_block))
+    {
+      LOG(INFO)<<"this->ExecuteOprBlock(run_ctx, opr_block);";
       this->ExecuteOprBlock(run_ctx, opr_block);
     }
   }

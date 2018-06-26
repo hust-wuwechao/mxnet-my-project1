@@ -348,9 +348,12 @@ class ThreadedEngine : public Engine {
    * \param opr_block the opr_block to be executed and deleted.
    * 调用他真实的执行。
    */
-  void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block) {
+  void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block)
+   {
     ThreadedOpr* threaded_opr = opr_block->opr;
+
     LOG(INFO)<<"ExecuteOprBlock"<<threaded_opr->opr_name;
+
     if (opr_block->profiling && threaded_opr->opr_name)
      {
       std::unique_ptr<profiler::ProfileOperator::Attributes> attrs;
@@ -362,29 +365,44 @@ class ThreadedEngine : public Engine {
                                                                  attrs.release()));
       opr_block->opr_profile->start(ctx.dev_type, ctx.dev_id);
     }
+    // 创建这个OP执行完毕后的回调函数
+    LOG(INFO)<<"创建这个OP执行完毕后的回调函数";
     CallbackOnComplete callback =
         this->CreateCallback(ThreadedEngine::OnCompleteStatic, opr_block);
+    
     const bool debug_info = (engine_info_ && debug_push_opr_ == opr_block);
     if (debug_info) {
       LOG(INFO) << "ExecuteOprBlock " << opr_block
                 << "shutdown_phase=" << shutdown_phase_;
     }
-    if (!shutdown_phase_) {
-      try {
+    LOG(INFO) << "ExecuteOprBlock " << opr_block
+                << "shutdown_phase=" << shutdown_phase_;
+    //  目前处于正常的阶段
+    if (!shutdown_phase_) 
+    {
+      try 
+      {
+        // 设置异常信息。依赖的异常变成自己的异常
         OnStart(threaded_opr);
-        if (debug_info) {
+
+        if (debug_info) 
+        {
           LOG(INFO) << "ExecuteOprFn ";
         }
-        try {
+        try 
+        {
           if (!(threaded_opr->opr_exception && *threaded_opr->opr_exception) ||
-              threaded_opr->wait) {
+              threaded_opr->wait) 
+          {
+            // 调用对应的函数执行
             threaded_opr->fn(run_ctx, callback);
           }
-           else 
-           {
+          else 
+          {
             callback();
           }
-        } catch (dmlc::Error& e) {
+        } catch (dmlc::Error& e) 
+        {
           threaded_opr->opr_exception =
               std::make_shared<std::exception_ptr>(std::current_exception());
           callback();
@@ -393,7 +411,8 @@ class ThreadedEngine : public Engine {
         {
           LOG(INFO) << "Fin ExecuteOprFn ";
         }
-      } catch (std::exception& e) {
+      } catch (std::exception& e) 
+      {
         std::string what = e.what();
         if (what.find("driver shutting down") == std::string::npos &&
             !shutdown_phase_) {
@@ -409,7 +428,9 @@ class ThreadedEngine : public Engine {
                  "empty after debugging.";
         }
       }
-    } else {
+    } 
+    else 
+    {
       callback();
     }
   }
@@ -475,7 +496,8 @@ class ThreadedEngine : public Engine {
    * 如果读写已经具有异常
    * 那么这个threaded_opr 会同样设置异常、
    */
-  inline void OnStart(ThreadedOpr* threaded_opr) {
+  inline void OnStart(ThreadedOpr* threaded_opr) 
+  {
     for (auto&& i : threaded_opr->const_vars)
      {
       if (i->var_exception && *i->var_exception)

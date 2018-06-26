@@ -22,6 +22,7 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "utility": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "system_error": "cpp"
     }
 }
