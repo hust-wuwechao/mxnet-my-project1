@@ -82,7 +82,8 @@ void Backward(const OpStatePtr& state,
               const OpContext& ctx,
               const std::vector<NDArray>& inputs,
               const std::vector<OpReqType>& req,
-              const std::vector<NDArray>& outputs) {
+              const std::vector<NDArray>& outputs) 
+  {
   const CustomFunctionParam& params = state.get_state<CustomFunctionParam>();
 
   std::vector<NDArrayHandle> ptrs;
@@ -92,14 +93,17 @@ void Backward(const OpStatePtr& state,
   std::unordered_set<int> output_tags({1});
 
   auto dev_id = ctx.run_ctx.ctx.dev_id;
-
-  for (const auto& i : inputs) {
+  //  对于每一个输入。
+  for (const auto& i : inputs)
+  { 
+    //  
     NDArray* nd = new NDArray(i.data(), dev_id);
     ptrs.push_back(reinterpret_cast<NDArrayHandle>(nd));
     cpys.push_back(*nd);
     tags.push_back(0);
   }
-  for (const auto& i : outputs) {
+  for (const auto& i : outputs) 
+  {
     NDArray* nd = new NDArray(i.data(), dev_id);
     ptrs.push_back(reinterpret_cast<NDArrayHandle>(nd));
     cpys.push_back(*nd);
@@ -112,10 +116,13 @@ void Backward(const OpStatePtr& state,
           params.info->callbacks[kCustomFunctionBackward])(
               inputs.size(), outputs.size(),
               const_cast<NDArrayHandle*>(ptrs.data()),
-              reinterpret_cast<const int*>(req.data()), ctx.is_train,
+              reinterpret_cast<const int*>(req.data()), 
+              ctx.is_train,
               params.info->contexts[kCustomFunctionBackward]));
     }, ctx, false, ctx.is_train, cpys, tags, output_tags, outputs);
 }
+
+
 
 inline bool InferStorageType(const nnvm::NodeAttrs& attrs, const int dev_mask,
                              DispatchMode* dispatch_mode,

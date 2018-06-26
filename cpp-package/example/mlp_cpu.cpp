@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
   LOG(INFO)<<" auto *exec = net.SimpleBind(ctx, args);";
   auto *exec = net.SimpleBind(ctx, args);
   // 
-  //  auto arg_names = net.ListArguments();
+  auto arg_names = net.ListArguments();
   //  LOG(INFO)<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
       /* for (auto& arg_list:arg_names )
       {
@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
       // Update parameters
       for (size_t i = 0; i < arg_names.size(); ++i) {
         if (arg_names[i] == "X" || arg_names[i] == "label") continue;
+        
         opt->Update(i, exec->arg_arrays[i], exec->grad_arrays[i]);
       }
     }

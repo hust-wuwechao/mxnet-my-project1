@@ -80,15 +80,21 @@ class Executor {
   *
   * \param head_grads the gradient of head nodes to be backproped.
   */
-  void Backward(const std::vector<NDArray> &head_grads =
-                    std::vector<NDArray>()) {
-    std::vector<NDArrayHandle> head_grads_;
-    for (auto d : head_grads) {
+  void Backward(const std::vector<NDArray> &head_grads =std::vector<NDArray>())
+  {
+    LOG(INFO)<<" void Backward(const std::vector<NDArray> &head_grads =std::vector<NDArray>())";
+    std::vector<NDArrayHandle>  head_grads_;
+    for (auto d : head_grads)
+    {
       head_grads_.push_back(d.GetHandle());
     }
-    if (head_grads_.size() > 0) {
+    if (head_grads_.size() > 0)
+    {
+      LOG(INFO)<<"MXExecutorBackward(handle_, head_grads_.size(), head_grads_.data())";
       MXExecutorBackward(handle_, head_grads_.size(), head_grads_.data());
-    } else {
+    }
+     else 
+    {
       MXExecutorBackward(handle_, 0, nullptr);
     }
   }
