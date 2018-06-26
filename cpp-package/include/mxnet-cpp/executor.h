@@ -60,12 +60,13 @@ class Executor {
   */
   void Forward(bool is_train) 
   {
-    LOG(INFO)<<"进入forward"
+    LOG(INFO)<<"MXExecutorForward()";
     MXExecutorForward(handle_, is_train ? 1 : 0);
     mx_uint out_size;
     NDArrayHandle *out_array;
     CHECK_EQ(MXExecutorOutputs(handle_, &out_size, &out_array), 0);
-    for (mx_uint i = 0; i < out_size; ++i) {
+    for (mx_uint i = 0; i < out_size; ++i) 
+    {
       outputs[i] = NDArray(out_array[i]);
     }
   }
