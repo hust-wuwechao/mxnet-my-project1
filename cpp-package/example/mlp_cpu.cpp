@@ -52,7 +52,7 @@ Symbol mlp(const std::vector<int> &layers) {
 int main(int argc, char** argv) {
   const int image_size = 28;
   const std::vector<int> layers{128, 64, 10};
-  const int batch_size = 100;
+  const int batch_size = 1;
   const int max_epoch = 10;
   const float learning_rate = 0.1;
   const float weight_decay = 1e-2;
@@ -108,17 +108,18 @@ int main(int argc, char** argv) {
   LOG(INFO)<<" auto *exec = net.SimpleBind(ctx, args);";
   auto *exec = net.SimpleBind(ctx, args);
   // 
-  auto arg_names = net.ListArguments();
-  LOG(INFO)<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
-    /* for (auto& arg_list:arg_names )
-    {
+  //  auto arg_names = net.ListArguments();
+  //  LOG(INFO)<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
+      /* for (auto& arg_list:arg_names )
+      {
 
         LOG(INFO)<<"具体参数为"<<arg_list;
 
-    }*/
+      }*/
 
   // Start training
-  for (int iter = 0; iter < max_epoch; ++iter) {
+  for (int iter = 0; iter < max_epoch; ++iter)
+  {
     int samples = 0;
     train_iter.Reset();
 

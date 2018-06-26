@@ -94,6 +94,7 @@ inline void EmplaceBackZeros(const NDArrayStorageType stype, const TShape &shape
 }
 void GraphExecutor::Forward(bool is_train) 
 {
+
   RunOps(is_train, 0, num_forward_nodes_);
 }
 
@@ -1634,6 +1635,7 @@ void GraphExecutor::InitCachedOps()
   op_nodes_.resize(idx.num_nodes());
 
   // setup the array and requirements.
+
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid)
    {
     LOG(INFO)<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -1707,12 +1709,13 @@ void GraphExecutor::InitCachedOps()
 
   }
   LOG(INFO)<<"idx.num_nodes()"<<idx.num_nodes();
+
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
   {
     const auto& inode = idx[nid];
     if (inode.source->is_variable())    continue; 
     if (op_nodes_[nid].skip_exec_node)  continue;
-    auto& exec = op_nodes_[nid].exec;
+    auto& exec = op_nodes_[nid].exec;      //  对于一个固定节点的执行器。
     bool  is_async = op_nodes_[nid].exec->exec_type() == ExecType::kAsync;
     bool is_gpu = op_nodes_[nid].ctx.dev_mask() == gpu::kDevMask;
 
@@ -1792,6 +1795,7 @@ void GraphExecutor::InitCachedOps()
      // setup the vars
      //  每一个节点cache 的OPT
      // 为节点构造完成的实例化的OP
+     //  为什么叫做cache-op呢？
     op_nodes_[nid].cached_opr = Engine::Get()->NewOperator(
         exec_fun, use_vars, mutate_vars, FnProperty::kNormal,
         op_nodes_[nid].opr_name);
@@ -1829,6 +1833,7 @@ void GraphExecutor::InitOpSegs()
 
   CachedSegOpr p;
   //  初始化为全部的节点的数目的
+  //  默认和节点的数目保持一致。
   LOG(INFO)<<"总的节点数目为="<<total_num_nodes;
   cached_seg_opr_.resize(total_num_nodes, p);
 
@@ -1858,7 +1863,8 @@ void GraphExecutor::InitOpSegs()
   }
 }
 
-
+//    这里面总算可以理解了，分段的目的是为了将变量和对应的计算合在一起进行计算。
+//    
 void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
  {
    LOG(INFO)<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
@@ -2017,7 +2023,7 @@ void GraphExecutor::ExecuteMonCallback(size_t nid) {
 
 void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end) 
 {
-  LOG(INFO)<<"进入RunOP"<<"is_train"<<is_train<<"topo_start"<<topo_start<<"topo_end"<<topo_end;
+  LOG(INFO)<<"进入RunOP  "<<"is_train   "<<is_train<<"topo_start  "<<topo_start<<"topo_end"<<topo_end;
   // Update context
 
   //  从拓扑的开始的结束。

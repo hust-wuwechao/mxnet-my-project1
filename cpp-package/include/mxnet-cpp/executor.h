@@ -58,7 +58,9 @@ class Executor {
   * \brief Perform a Forward operation of Operator
   *  After this operation, user can get the result by using function head.
   */
-  void Forward(bool is_train) {
+  void Forward(bool is_train) 
+  {
+    LOG(INFO)<<"进入forward"
     MXExecutorForward(handle_, is_train ? 1 : 0);
     mx_uint out_size;
     NDArrayHandle *out_array;
