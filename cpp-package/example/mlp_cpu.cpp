@@ -110,12 +110,12 @@ int main(int argc, char** argv) {
   // 
   auto arg_names = net.ListArguments();
   LOG(INFO)<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
-  for (auto& arg_list:arg_names )
-{
+    /* for (auto& arg_list:arg_names )
+    {
 
-     LOG(INFO)<<"具体参数为"<<arg_list;
+        LOG(INFO)<<"具体参数为"<<arg_list;
 
-}
+    }*/
 
   // Start training
   for (int iter = 0; iter < max_epoch; ++iter) {

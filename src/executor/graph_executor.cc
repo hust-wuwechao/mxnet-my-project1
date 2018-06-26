@@ -1471,6 +1471,9 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
   // get the graph
   const auto& idx = graph_.indexed_graph();
   // get the storage
+  //
+
+
   const auto& vdtype = graph_.GetAttr<DTypeVector>("dtype");
   const auto& vshape = graph_.GetAttr<ShapeVector>("shape");
   const auto& vstorage = graph_.GetAttr<StorageVector>("storage_id");
@@ -1482,12 +1485,18 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
   CHECK_EQ(data_entry_.size(), vshape.size());
   std::vector<Context> data_context(idx.num_node_entries());
   std::vector<NDArrayStorageType> data_storage_type(idx.num_node_entries(), kUndefinedStorage);
-  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) {
-    for (uint32_t i = 0; i < idx[nid].source->num_outputs(); ++i) {
+  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
+  {
+
+    for (uint32_t i = 0; i < idx[nid].source->num_outputs(); ++i)
+     {
+      
+
       auto eid = idx.entry_id(nid, i);
       data_context[eid] = vctx[nid];
       CHECK_NE(vstorage_type[nid], kUndefinedStorage);
       data_storage_type[eid] = (NDArrayStorageType) vstorage_type[nid];
+
     }
   }
 
@@ -1689,6 +1698,7 @@ void GraphExecutor::InitCachedOps()
   // Note that this modifies the requirment of kWriteInplace
   LOG(INFO)<<"num_forward_outputs_===="<<num_forward_outputs_;
   LOG(INFO)<<"idx.outputs().size()===="<<idx.outputs().size();
+  // 找到对应的梯度的存储
   for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
   {
     auto& e = idx.outputs()[j];
@@ -1700,151 +1710,243 @@ void GraphExecutor::InitCachedOps()
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
   {
     const auto& inode = idx[nid];
-    if (inode.source->is_variable()) continue;
-    if (op_nodes_[nid].skip_exec_node) continue;
+    if (inode.source->is_variable())    continue; 
+    if (op_nodes_[nid].skip_exec_node)  continue;
     auto& exec = op_nodes_[nid].exec;
     bool  is_async = op_nodes_[nid].exec->exec_type() == ExecType::kAsync;
     bool is_gpu = op_nodes_[nid].ctx.dev_mask() == gpu::kDevMask;
 
     // the variables
     std::vector<Engine::VarHandle> use_vars, mutate_vars;
-    
-    for (size_t i = 0; i < exec->in_array.size(); ++i) {
+    // 输入变量。
+    for (size_t i = 0; i < exec->in_array.size(); ++i) 
+    {
       auto& nd = exec->in_array[i];
       use_vars.push_back(nd.var());
     }
-    for (auto& r : exec->op_ctx.requested) {
+    
+    for (auto& r : exec->op_ctx.requested) 
+    {
       mutate_vars.push_back(r.var);
     }
-    for (auto& nd : exec->out_array) {
+    for (auto& nd : exec->out_array) 
+    {
       mutate_vars.push_back(nd.var());
     }
-    if (exec->var() != nullptr) {
+    if (exec->var() != nullptr) 
+    {
       mutate_vars.push_back(exec->var());
     }
     // dedup vars
+    // 变量去重
     Engine::Get()->DeduplicateVarHandle(&use_vars, &mutate_vars);
+
     // all vars include both mutate vars and use vars
+
     std::vector<Engine::VarHandle> all_vars(use_vars);
+
     std::copy(mutate_vars.begin(), mutate_vars.end(),
               std::inserter(all_vars, all_vars.end()));
-    // setup exec vars
+    //   setup exec vars
+    //   交给执行引擎执行的第一个任务
+    //   就是变量的设置问题。
+    //   
     Engine::Get()->PushAsync(
-      [exec](RunContext rctx, Engine::CallbackOnComplete on_complete) {
+      [exec](RunContext rctx, Engine::CallbackOnComplete on_complete) 
+      {
         exec->Setup();
         on_complete();
-      }, Context::CPU(), {}, all_vars, FnProperty::kNormal, 0,
+      }, 
+      Context::CPU(),
+      {},
+      all_vars,
+      FnProperty::kNormal,
+      0,
       "SetupExec");
     auto exec_fun = [exec, is_async, is_gpu] (
-        RunContext ctx, Engine::CallbackOnComplete on_complete) {
-      if (is_async) {
+        RunContext ctx, Engine::CallbackOnComplete on_complete) 
+      {
+      if (is_async) 
+      {
         exec->op_ctx.async_on_complete = on_complete;
       }
       exec->Run(ctx, is_gpu);
       // call on complete only if it is async op
-      if (!is_async) {
-        if (is_gpu) {
+      LOG(INFO)<<"is_async==="<<is_async;
+      if (!is_async)
+      {
+        if (is_gpu)
+         {
         #if MXNET_USE_CUDA
           // Wait GPU kernel to finish.
           ctx.get_stream<gpu>()->Wait();
+
         #else
           LOG(FATAL) << MXNET_GPU_NOT_ENABLED_ERROR;
         #endif
         }
         on_complete();
+
       }
     };
-    // setup the vars
+     // setup the vars
+     //  每一个节点cache 的OPT
+     // 为节点构造完成的实例化的OP
     op_nodes_[nid].cached_opr = Engine::Get()->NewOperator(
         exec_fun, use_vars, mutate_vars, FnProperty::kNormal,
         op_nodes_[nid].opr_name);
+
     op_nodes_[nid].mutate_vars = mutate_vars;
+
     op_nodes_[nid].use_vars = use_vars;
   }
 }
 
-void GraphExecutor::InitOpSegs() {
+void GraphExecutor::InitOpSegs()
+ {
+   LOG(INFO)<<"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
+   LOG(INFO)<<"进入到InitOpSegs()内部";
   size_t total_num_nodes = graph_.indexed_graph().num_nodes();
+
+  //std::vector<CachedSegOpr> mxnet::exec::GraphExecutor::cached_seg_opr_
   cached_seg_opr_.clear();
+    //  也就是说一段的cache的操作。
+    // a cached segment operator that executes a segment
+    //   struct CachedSegOpr {
+    // context of the operator
+    // Context ctx;
+    // begin in topo order
+    //size_t topo_start;
+    // end in topo order
+    // size_t topo_end;
+    // the cached operator
+    // Engine::OprHandle opr = nullptr;
+    // list of op executors
+    //std::vector<std::shared_ptr<OpExecutor> > exec_list;
+    // };
+
+
+
   CachedSegOpr p;
+  //  初始化为全部的节点的数目的
+  LOG(INFO)<<"总的节点数目为="<<total_num_nodes;
   cached_seg_opr_.resize(total_num_nodes, p);
+
   if (monitor_callback_) return;
 
   // Generate segments based on the graph structure
+  //  是不是批量执行推测？？？？？
   bool prefer_bulk_exec_inference = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_INFERENCE", true);
   // Whether to perform bulk exec for training
   const profiler::Profiler *prof = profiler::Profiler::Get();
+  // 是不是批量执行训练？？？
   bool prefer_bulk_exec = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_TRAIN", 1)
                           && (!prof || !prof->AggregateEnabled());
-
+  //  这个用来判断训练还是推测挺好的
   bool is_training = num_forward_nodes_ != total_num_nodes;
-
-  if (prefer_bulk_exec  && is_training) {
+  // 批次训练
+  if (prefer_bulk_exec  && is_training) 
+  {
+    LOG(INFO)<<"进入到BulkTrainingOpSegs(total_num_nodes)";
     this->BulkTrainingOpSegs(total_num_nodes);
   }
-
-  if (prefer_bulk_exec_inference && !is_training) {
+  //  批次推测
+  if (prefer_bulk_exec_inference && !is_training) 
+  {
+    LOG(INFO)<<"进入到BulkInferenceOpSegs";
     this->BulkInferenceOpSegs();
   }
 }
 
 
-void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes) {
+void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
+ {
+   LOG(INFO)<<"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+   LOG(INFO)<<"进入BulkTrainingOpSegs";
   // The maximum number of node in a segment executed in bulk
   size_t num_nodes_threshold = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_MAX_NODE_TRAIN", 15);
 
   // create forward segments for training
   size_t topo_start = 0;
-  for (size_t nid = 0; nid < num_forward_nodes_; nid++) {
+  LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
+  //  进行正向的过程。
+  for (size_t nid = 0; nid < num_forward_nodes_; nid++)
+   {
+    // 按照拓扑排序好的性顺序来获取节点
     auto &node = graph_.indexed_graph()[nid].source;
     auto &op_node = op_nodes_[nid];
     // check if the segment relies on external input, or exceeds maxinum number of node,
     // or requires async ops
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
-        op_node.exec->exec_type() != ExecType::kSync) {
+        op_node.exec->exec_type() != ExecType::kSync) 
+    {
       // create a new segment for the previous nodes if the current one cannot be bulked
       cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
       topo_start = nid + 1;
     }
   }
   // the last segment
-  if (topo_start != num_forward_nodes_) {
+  if (topo_start != num_forward_nodes_) 
+  {
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, num_forward_nodes_);
   }
 
   // create backward segments for training
   // get all gradient variables
+  
   std::unordered_set<engine::VarHandle> grad_vars;
-  for (auto &kv : grad_store_) {
+
+  //std::vector<std::pair<OpReqType,NDArray>> mxnet::exec::GraphExecutor::grad_store_
+  //  second 是梯度的存储的数组
+  for (auto &kv : grad_store_) 
+  {
     grad_vars.insert(kv.second.var());
   }
+  LOG(INFO)<<"grad_vars.size()  "<<grad_vars.size();
   auto &idx = graph_.indexed_graph();
   topo_start = num_forward_nodes_;
-  for (size_t nid = num_forward_nodes_; nid < total_num_nodes; nid++) {
+  LOG(INFO)<<"total_num_nodes"<<total_num_nodes;
+  //  进行反向的过程。
+
+  for (size_t nid = num_forward_nodes_; nid < total_num_nodes; nid++) 
+  {
     auto &op_node = op_nodes_[nid];
-    if (op_node.skip_exec_node || op_node.exec == nullptr) {
+
+    if (op_node.skip_exec_node || op_node.exec == nullptr) 
+    {
       continue;
     }
     if (idx[nid].source->is_variable() || nid - topo_start > num_nodes_threshold ||
-        op_node.exec->exec_type() != ExecType::kSync) {
+        op_node.exec->exec_type() != ExecType::kSync)
+    {
+      //std::vector<CachedSegOpr> mxnet::exec::GraphExecutor::cached_seg_opr_
+      //  
+
+      
       cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
       topo_start = nid + 1;
-    } else {
+    } 
+    else 
+    {
       // If it produces output gradient, don't include it in the segment
       bool output_gradient = false;
-      for (auto &out_arr : op_node.exec->out_array) {
-        if (grad_vars.find(out_arr.var()) != grad_vars.end()) {
+      for (auto &out_arr : op_node.exec->out_array)
+       {
+        if (grad_vars.find(out_arr.var()) != grad_vars.end()) 
+        {
           output_gradient = true;
         }
       }
-      if (output_gradient) {
+      if (output_gradient) 
+      {
         cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
         topo_start = nid + 1;
       }
     }
   }
   // last segment for backward
-  if (topo_start < total_num_nodes) {
+  if (topo_start < total_num_nodes)
+ {
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, total_num_nodes);
   }
 }
@@ -1964,48 +2066,62 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
 
 GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start, size_t topo_end)
  {
-  std::vector<Engine::VarHandle> use_vars;
-  std::vector<Engine::VarHandle> mutate_vars;
+  LOG(INFO)<<"CreateCachedSegOpreeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+  std::vector<Engine::VarHandle>  use_vars;
+  std::vector<Engine::VarHandle>  mutate_vars;
   Context *pctx = nullptr;
-  GraphExecutor::CachedSegOpr ret;
+  GraphExecutor::CachedSegOpr    ret;
   ret.topo_start = topo_start;
   ret.topo_end = topo_end;
   auto& exec_list = ret.exec_list;
   // invalid segment
-  if (topo_end <= topo_start) {
+  if (topo_end <= topo_start) 
+  {
     return ret;
   }
   std::string opr_names = "[";
 
   const auto& idx = graph_.indexed_graph();
-  for (size_t nid = topo_start; nid < topo_end; ++nid) {
+   // 遍历每一个节点
+  for (size_t nid = topo_start; nid < topo_end; ++nid)
+   {
     std::vector<Engine::VarHandle> all_vars;
     const auto& inode = idx[nid];
     OpNode& op_node = op_nodes_[nid];
-    if (op_node.skip_exec_node) continue;
-    if (inode.source->is_variable()) continue;
-    if (op_node.exec->exec_type() != ExecType::kSync) {
+    if (op_node.skip_exec_node)       continue;
+    if (inode.source->is_variable())  continue;
+    if (op_node.exec->exec_type() != ExecType::kSync)
+    {
       return ret;
     }
-    if (pctx == nullptr) pctx = &(op_node.ctx);
-    if (*pctx != op_node.ctx) {
+    if (pctx == nullptr)  pctx = &(op_node.ctx);
+    if (*pctx != op_node.ctx) 
+    {
       return ret;
     }
 
     auto& exec = op_nodes_[nid].exec;
+    //将的那个节点的依赖的变量复制到全局的变量里面
     std::copy(op_node.mutate_vars.begin(), op_node.mutate_vars.end(),
               std::inserter(mutate_vars, mutate_vars.end()));
+
     std::copy(op_node.use_vars.begin(), op_node.use_vars.end(),
               std::inserter(use_vars, use_vars.end()));
+    //  添加这个节点的执行器
     ret.exec_list.push_back(exec);
+    
     opr_names += inode.source->op()->name + ",";
+    LOG(INFO)<<"节点的名字为"<<inode.source->op()->name;
+
   }
 
   if (pctx == nullptr) return ret;
   ret.ctx = *pctx;
+  // 变量去重
   Engine::Get()->DeduplicateVarHandle(&use_vars, &mutate_vars);
 
   bool is_gpu = pctx->dev_mask() == gpu::kDevMask;
+  // 获取到每一个和上下文相关的执行的函数，也就是说得到全局的函数
   auto exec_fun = [exec_list, is_gpu] (
       RunContext ctx, Engine::CallbackOnComplete on_complete) {
     // Run all opr in the sub-graph
@@ -2013,18 +2129,20 @@ GraphExecutor::CachedSegOpr GraphExecutor::CreateCachedSegOpr(size_t topo_start,
       exec->Run(ctx, is_gpu);
     }
     if (is_gpu) {
-#if MXNET_USE_CUDA
-      // Wait GPU kernel to finish.
-      ctx.get_stream<gpu>()->Wait();
-#else
+    #if MXNET_USE_CUDA
+          // Wait GPU kernel to finish.
+          ctx.get_stream<gpu>()->Wait();
+    #else
       LOG(FATAL) << MXNET_GPU_NOT_ENABLED_ERROR;
-#endif
+    #endif
     }
     on_complete();
   };
   opr_names.pop_back();
   opr_names += "]";
   auto iter = cached_seg_opr_names_.insert(opr_names).first;
+  //  返回的值GraphExecutor::CachedSegOpr    ret;
+  //  .opr=全部的OPr
   ret.opr = Engine::Get()->NewOperator(
     exec_fun, use_vars, mutate_vars, FnProperty::kNormal,
     iter->c_str());
