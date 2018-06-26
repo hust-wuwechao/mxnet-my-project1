@@ -63,7 +63,9 @@ std::shared_ptr<Engine> Engine::_GetSharedRef() {
   return sptr;
 }
 
-Engine* Engine::Get() {
+Engine* Engine::Get() 
+{
+  //  换回目前引擎的实例
   static Engine *inst = _GetSharedRef().get();
   return inst;
 }

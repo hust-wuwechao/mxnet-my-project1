@@ -2047,6 +2047,7 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
   for (size_t nid = topo_start; nid < topo_end; ++nid) 
   {
     //  这个是干嘛的？？？？？？？
+    //  这段世他的变量和操作在一起进行。
     auto seg_op = cached_seg_opr_[nid];
     // Check segments first
     //  段模式优先
@@ -2059,6 +2060,7 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
       continue;
     }
     // Normal mode
+
     const auto& inode = idx[nid];
     if (inode.source->is_variable()) continue;
     OpNode& opnode = op_nodes_[nid];
@@ -2066,7 +2068,7 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
     opnode.exec->op_ctx.is_train = is_train;
     //  如果OP是跨设备的copy
     if (opnode.exec->exec_type() == ExecType::kCrossDeviceCopy)
-     {
+    {
       CHECK_EQ(inode.inputs.size(), 1U);
       CHECK_EQ(opnode.exec->in_array.size(), 1U);
       CHECK_EQ(opnode.exec->out_array.size(), 1U);
@@ -2083,7 +2085,8 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
       LOG(FATAL) << "Not accessed";
     }
     // Monitor callbacks
-    if (monitor_callback_) {
+    if (monitor_callback_) 
+    {
       ExecuteMonCallback(nid);
     }
   }

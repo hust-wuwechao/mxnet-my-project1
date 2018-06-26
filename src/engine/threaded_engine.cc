@@ -280,6 +280,7 @@ void ThreadedEngine::DeleteOperator(OprHandle op) {
 
 void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool profiling) 
 {
+  LOG(INFO)<<"void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority";
   // 刷新当前的块去执行
   BulkFlush();
   //创建一个新的 ThreadedOpr核心是里面的操作是OP
@@ -318,7 +319,7 @@ void ThreadedEngine::Push(OprHandle op, Context exec_ctx, int priority, bool pro
   if (opr_block->decr_wait() == 0)
   {
     // 如果这个OP块所依赖的变量的数目变为0
-     
+    LOG(INFO)<<"this->PushToExecute(opr_block, true)";
     this->PushToExecute(opr_block, true);
     
   }
