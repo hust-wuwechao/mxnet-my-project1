@@ -76,13 +76,14 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
 
   void Start() override {
     if (is_worker_) return;
-
-    gpu_worker_nthreads_ = common::GetNumThreadsPerGPU();
-
-    cpu_worker_nthreads_ = dmlc::GetEnv("MXNET_CPU_WORKER_NTHREADS", 1);
-
+   
+    //gpu_worker_nthreads_ = common::GetNumThreadsPerGPU();
+    gpu_worker_nthreads_=1;
+    //cpu_worker_nthreads_ = dmlc::GetEnv("MXNET_CPU_WORKER_NTHREADS", 1);
+    cpu_worker_nthreads_=1;
     // create CPU task
-    int cpu_priority_nthreads = dmlc::GetEnv("MXNET_CPU_PRIORITY_NTHREADS", 4);
+    //int cpu_priority_nthreads = dmlc::GetEnv("MXNET_CPU_PRIORITY_NTHREADS", 4);
+    int  cpu_priority_nthreads=1;
     //td::unique_ptr<ThreadWorkerBlock<kPriorityQueue>> mxnet::engine::ThreadedEnginePerDevice::cpu_priority_worker_
     cpu_priority_worker_.reset(new ThreadWorkerBlock<kPriorityQueue>());
 
@@ -151,7 +152,9 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
         else 
         {
           int dev_id = ctx.dev_id;
+          //
           int nthread = cpu_worker_nthreads_;
+          //int nthread=1;
           // 我们其实发现
           //  这里面会先
           LOG(INFO)<<"ptr->task_queue.Push(opr_block, opr_block->priority);";
@@ -194,10 +197,13 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
                               prop == FnProperty::kCopyToGPU);
         LOG(INFO)<<"is_copy"<<is_copy; 
         
-        //const size_t nthread = gpu_worker_nthreads_;
-        const size_t nthread=1;
+        const size_t nthread = gpu_worker_nthreads_;
+
+        //const size_t nthread=1;
+
         LOG(INFO)<<"gpu_worker_nthreads_"<<gpu_worker_nthreads_;
-        if (is_copy) {
+        if (is_copy) 
+        {
           auto ptr = gpu_copy_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() {
             // Signify to kernel that GPU is being used, so reserve cores as necessary
             OpenMP::Get()->set_reserve_cores(GetReserveCoreCount(true));
@@ -218,7 +224,7 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
             }
           }
         }
-         else 
+        else 
          {
           //      核心是得到对应的队列。
           //  
@@ -249,7 +255,8 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
             if (opr_block->opr->prop == FnProperty::kDeleteVar) 
             {
               ptr->task_queue.PushFront(opr_block, opr_block->priority);
-            } else 
+            } 
+            else 
             {
               ptr->task_queue.Push(opr_block, opr_block->priority);
             }
