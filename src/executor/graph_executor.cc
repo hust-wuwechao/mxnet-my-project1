@@ -1687,21 +1687,29 @@ void GraphExecutor::InitCachedOps()
     }
   }
   // Note that this modifies the requirment of kWriteInplace
-  for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) {
+  LOG(INFO)<<"um_forward_outputs_===="<<um_forward_outputs_;
+  LOG(INFO)<<"idx.outputs().size()===="<<idx.outputs().size();
+  for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
+  {
     auto& e = idx.outputs()[j];
     op_nodes_[e.node_id].exec->req[e.index] =
         grad_store_[j - num_forward_outputs_].first;
+
   }
-  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) {
+  LOG(INFO)<<"idx.num_nodes()"<<idx.num_nodes();
+  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
+  {
     const auto& inode = idx[nid];
     if (inode.source->is_variable()) continue;
     if (op_nodes_[nid].skip_exec_node) continue;
     auto& exec = op_nodes_[nid].exec;
-    bool is_async = op_nodes_[nid].exec->exec_type() == ExecType::kAsync;
+    bool  is_async = op_nodes_[nid].exec->exec_type() == ExecType::kAsync;
     bool is_gpu = op_nodes_[nid].ctx.dev_mask() == gpu::kDevMask;
 
     // the variables
+    
     std::vector<Engine::VarHandle> use_vars, mutate_vars;
+
     for (size_t i = 0; i < exec->in_array.size(); ++i) {
       auto& nd = exec->in_array[i];
       use_vars.push_back(nd.var());
