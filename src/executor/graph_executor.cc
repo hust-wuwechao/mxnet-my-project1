@@ -1896,7 +1896,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   // the last segment
   if (topo_start != num_forward_nodes_) 
   {
-    LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
+    LOG(INFO)<<"topo_start  "<<topo_start<<"   num_forward_nodes_   "<<num_forward_nodes_;
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, num_forward_nodes_);
   }
 
@@ -1960,7 +1960,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   // last segment for backward
   if (topo_start < total_num_nodes)
  {
-    LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
+    LOG(INFO)<<"topo_start  "<<topo_start<<"   total_num_nodes   "<<total_num_nodes;
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, total_num_nodes);
   }
 }
