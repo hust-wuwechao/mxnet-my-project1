@@ -1687,7 +1687,7 @@ void GraphExecutor::InitCachedOps()
     }
   }
   // Note that this modifies the requirment of kWriteInplace
-  LOG(INFO)<<"um_forward_outputs_===="<<um_forward_outputs_;
+  LOG(INFO)<<"num_forward_outputs_===="<<num_forward_outputs_;
   LOG(INFO)<<"idx.outputs().size()===="<<idx.outputs().size();
   for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
   {
@@ -1707,9 +1707,8 @@ void GraphExecutor::InitCachedOps()
     bool is_gpu = op_nodes_[nid].ctx.dev_mask() == gpu::kDevMask;
 
     // the variables
-    
     std::vector<Engine::VarHandle> use_vars, mutate_vars;
-
+    
     for (size_t i = 0; i < exec->in_array.size(); ++i) {
       auto& nd = exec->in_array[i];
       use_vars.push_back(nd.var());
