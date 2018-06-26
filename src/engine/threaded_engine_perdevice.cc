@@ -154,7 +154,7 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
           int nthread = cpu_worker_nthreads_;
           // 我们其实发现
           //  这里面会先
-          LOG(INFO)<<"ptr->task_queue.Push(opr_block, opr_block->priority);"
+          LOG(INFO)<<"ptr->task_queue.Push(opr_block, opr_block->priority);";
           auto ptr =
           cpu_normal_workers_.Get(dev_id, [this, ctx, nthread]() 
           {
