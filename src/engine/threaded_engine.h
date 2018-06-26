@@ -350,9 +350,13 @@ class ThreadedEngine : public Engine {
    */
   void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block)
    {
+    LOG(INFO)<<" 进入void ExecuteOprBlock(RunContext run_ctx, OprBlock* opr_block)";
+
+    LOG(INFO)<<" --------------------------------------------------------------------";
+
     ThreadedOpr* threaded_opr = opr_block->opr;
 
-    LOG(INFO)<<"ExecuteOprBlock"<<threaded_opr->opr_name;
+    LOG(INFO)<<"ExecuteOprBlock------------->"<<threaded_opr->opr_name;
 
     if (opr_block->profiling && threaded_opr->opr_name)
      {
@@ -433,6 +437,7 @@ class ThreadedEngine : public Engine {
     {
       callback();
     }
+    
   }
 
   int bulk_size() const override {

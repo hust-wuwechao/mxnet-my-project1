@@ -32,9 +32,11 @@ bool isFileExists(const std::string &filename) {
   return fhandle.good();
 }
 
-bool check_datafiles(const std::vector<std::string> &data_files) {
+bool check_datafiles(const std::vector<std::string> &data_files) 
+{
   for (size_t index=0; index < data_files.size(); index++) {
-    if (!(isFileExists(data_files[index]))) {
+    if (!(isFileExists(data_files[index]))) 
+    {
       LG << "Error: File does not exist: "<< data_files[index];
       return false;
     }
