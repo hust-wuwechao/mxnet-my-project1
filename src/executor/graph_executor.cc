@@ -1928,7 +1928,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     {
       continue;
     }
-    int  is_B=node->is_variable()?1:0;
+    int  is_B=idx[nid].source->is_variable()?1:0;
     LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is_B;
     if (idx[nid].source->is_variable() || nid - topo_start > num_nodes_threshold ||
         op_node.exec->exec_type() != ExecType::kSync)
