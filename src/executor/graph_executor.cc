@@ -1883,8 +1883,8 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     // or requires async ops
     //  采用分段的方式。
     //  如果是一个变量或者  长度太长了。。或者是异步执行。
-    int  is-a=node->is_variable()?1:0;
-    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is-a;
+    int  is_a=node->is_variable()?1:0;
+    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is_a;
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
     op_node.exec->exec_type() != ExecType::kSync) 
     {
@@ -1928,8 +1928,8 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     {
       continue;
     }
-    int  is-b=node->is_variable()?1:0;
-    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is-b;
+    int  is_B=node->is_variable()?1:0;
+    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is_B;
     if (idx[nid].source->is_variable() || nid - topo_start > num_nodes_threshold ||
         op_node.exec->exec_type() != ExecType::kSync)
     {
