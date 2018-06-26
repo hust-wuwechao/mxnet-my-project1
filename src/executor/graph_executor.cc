@@ -1861,9 +1861,13 @@ void GraphExecutor::InitOpSegs()
 
 void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
  {
-   LOG(INFO)<<"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+   LOG(INFO)<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
+   LOG(INFO)<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
+   LOG(INFO)<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
    LOG(INFO)<<"进入BulkTrainingOpSegs";
   // The maximum number of node in a segment executed in bulk
+
+  LOG(INFO)<<"num_nodes_threshold    "<<num_nodes_threshold;
   size_t num_nodes_threshold = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_MAX_NODE_TRAIN", 15);
 
   // create forward segments for training
@@ -1871,16 +1875,20 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
   //  进行正向的过程。
   for (size_t nid = 0; nid < num_forward_nodes_; nid++)
-   {
+  {
     // 按照拓扑排序好的性顺序来获取节点
     auto &node = graph_.indexed_graph()[nid].source;
     auto &op_node = op_nodes_[nid];
     // check if the segment relies on external input, or exceeds maxinum number of node,
     // or requires async ops
+    //  采用分段的方式。
+    //  
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
-        op_node.exec->exec_type() != ExecType::kSync) 
+    op_node.exec->exec_type() != ExecType::kSync) 
     {
       // create a new segment for the previous nodes if the current one cannot be bulked
+      // num_nodes_threshold  每隔这么多次进行一次成段构造。
+      LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
       cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
       topo_start = nid + 1;
     }
@@ -1888,6 +1896,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   // the last segment
   if (topo_start != num_forward_nodes_) 
   {
+    LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, num_forward_nodes_);
   }
 
@@ -1922,7 +1931,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
       //std::vector<CachedSegOpr> mxnet::exec::GraphExecutor::cached_seg_opr_
       //  
 
-      
+      LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
       cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
       topo_start = nid + 1;
     } 
@@ -1930,8 +1939,10 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     {
       // If it produces output gradient, don't include it in the segment
       bool output_gradient = false;
+      //  遍历这个节点的每一个输出的结果。
       for (auto &out_arr : op_node.exec->out_array)
        {
+        //  如果输出的梯度变量发现了这个节点
         if (grad_vars.find(out_arr.var()) != grad_vars.end()) 
         {
           output_gradient = true;
@@ -1939,6 +1950,8 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
       }
       if (output_gradient) 
       {
+        LOG(INFO)<<"output_gradient对吗  "<<output_gradient;
+        LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
         cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
         topo_start = nid + 1;
       }
@@ -1947,6 +1960,7 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   // last segment for backward
   if (topo_start < total_num_nodes)
  {
+    LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
     cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, total_num_nodes);
   }
 }
