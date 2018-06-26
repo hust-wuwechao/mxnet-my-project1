@@ -1882,10 +1882,13 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     // check if the segment relies on external input, or exceeds maxinum number of node,
     // or requires async ops
     //  采用分段的方式。
-    //  
+    //  如果是一个变量或者  长度太长了。。或者是异步执行。
+    int  is-a=node->is_variable()?1:0;
+    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is-a;
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
     op_node.exec->exec_type() != ExecType::kSync) 
     {
+
       // create a new segment for the previous nodes if the current one cannot be bulked
       // num_nodes_threshold  每隔这么多次进行一次成段构造。
       LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
@@ -1925,6 +1928,8 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     {
       continue;
     }
+    int  is-b=node->is_variable()?1:0;
+    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is-b;
     if (idx[nid].source->is_variable() || nid - topo_start > num_nodes_threshold ||
         op_node.exec->exec_type() != ExecType::kSync)
     {
