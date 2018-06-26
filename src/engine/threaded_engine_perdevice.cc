@@ -193,9 +193,9 @@ class ThreadedEnginePerDevice : public ThreadedEngine {
         const bool is_copy = (prop == FnProperty::kCopyFromGPU ||
                               prop == FnProperty::kCopyToGPU);
         LOG(INFO)<<"is_copy"<<is_copy; 
-
-        const size_t nthread = gpu_worker_nthreads_;
-
+        
+        //const size_t nthread = gpu_worker_nthreads_;
+        const size_t nthread=1;
         LOG(INFO)<<"gpu_worker_nthreads_"<<gpu_worker_nthreads_;
         if (is_copy) {
           auto ptr = gpu_copy_workers_.Get(ctx.dev_id, [this, ctx, is_copy, nthread]() {
