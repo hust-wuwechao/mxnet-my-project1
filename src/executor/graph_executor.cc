@@ -1867,9 +1867,9 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
    LOG(INFO)<<"进入BulkTrainingOpSegs";
   // The maximum number of node in a segment executed in bulk
 
-  LOG(INFO)<<"num_nodes_threshold    "<<num_nodes_threshold;
+ 
   size_t num_nodes_threshold = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_MAX_NODE_TRAIN", 15);
-
+  LOG(INFO)<<"num_nodes_threshold    "<<num_nodes_threshold;
   // create forward segments for training
   size_t topo_start = 0;
   LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
