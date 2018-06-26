@@ -361,10 +361,12 @@ class ThreadedEngine : public Engine {
     if (opr_block->profiling && threaded_opr->opr_name)
      {
       std::unique_ptr<profiler::ProfileOperator::Attributes> attrs;
-      if (profiler_->AggregateEnabled()) {
+      if (profiler_->AggregateEnabled()) 
+      {
         attrs.reset(new profiler::ProfileOperator::Attributes());
       }
       const Context& ctx = opr_block->ctx;
+
       opr_block->opr_profile.reset(new profiler::ProfileOperator(threaded_opr->opr_name,
                                                                  attrs.release()));
       opr_block->opr_profile->start(ctx.dev_type, ctx.dev_id);
@@ -378,9 +380,9 @@ class ThreadedEngine : public Engine {
     if (debug_info) {
       LOG(INFO) << "ExecuteOprBlock " << opr_block
                 << "shutdown_phase=" << shutdown_phase_;
-    }
-    LOG(INFO) << "ExecuteOprBlock " << opr_block
-                << "shutdown_phase=" << shutdown_phase_;
+    } 
+    LOG(INFO) << "ExecuteOprBlock        " << opr_block
+                << " ----------shutdown_phase=      " << shutdown_phase_;
     //  目前处于正常的阶段
     if (!shutdown_phase_) 
     {
@@ -437,7 +439,7 @@ class ThreadedEngine : public Engine {
     {
       callback();
     }
-    
+
   }
 
   int bulk_size() const override {

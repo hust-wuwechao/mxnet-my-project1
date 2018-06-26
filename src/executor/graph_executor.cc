@@ -1186,6 +1186,8 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
 
 
   LOG(INFO)<<"this->InitCachedOps()";
+  //  看看核心这个函数。
+
   this->InitCachedOps();
 
   LOG(INFO)<<"this->InitOpSegs();";
@@ -1607,8 +1609,10 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
 }
 
 
-void GraphExecutor::InitCachedOps() {
+void GraphExecutor::InitCachedOps()
+ {
   // get the graph
+  LOG(INFO)<<"进入InitCachedOps()内部%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
   const auto& idx = graph_.indexed_graph();
   const auto& vstorage_inplace =
       graph_.GetAttr<std::vector<int> >("storage_inplace_index");
@@ -1617,38 +1621,68 @@ void GraphExecutor::InitCachedOps() {
   const auto& vctx = graph_.GetAttr<ContextVector>("context");
   const auto& addto_entry = graph_.GetAttr<std::vector<int> >("addto_entry");
   const auto& skip_plus_node = graph_.GetAttr<std::vector<int> >("skip_plus_node");
-
+  LOG(INFO)<<"idx.num_nodes()===="<<idx.num_nodes();
   op_nodes_.resize(idx.num_nodes());
+
   // setup the array and requirements.
-  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) {
+  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid)
+   {
+    LOG(INFO)<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    LOG(INFO)<<"遍历nid====="<<nid;
     const auto& inode = idx[nid];
     if (inode.source->is_variable()) continue;
+
     op_nodes_[nid].opr_name = inode.source->op()->name.c_str();
-    if (skip_plus_node.at(nid)) {
+    int sk=skip_plus_node.at(nid)?1:0;
+    LOG(INFO)<<"skip_plus_node.at(nid)   "<<sk;
+    if (skip_plus_node.at(nid))
+    {
+    
       op_nodes_[nid].skip_exec_node = true; continue;
     }
-
     op_nodes_[nid].exec = op_execs[nid];
     op_nodes_[nid].ctx = vctx[nid];
     auto& exec = op_nodes_[nid].exec;
     CHECK_EQ(exec->in_array.size(), 0U);
     CHECK_EQ(exec->out_array.size(), 0U);
-    for (const auto& e : inode.inputs) {
+    //  遍历每一个节点的输入
+    LOG(INFO)<<"对于每一个输入";
+    for (const auto& e : inode.inputs)
+    {
+      //由对应的实体得到对应的ID
+       LOG(INFO)<<"idx.entry_id(e)  "<<idx.entry_id(e);
       exec->in_array.push_back(data_entry_[idx.entry_id(e)]);
     }
     // detect inplace requirement
-    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) {
+    //
+    LOG(INFO)<<"对于每一个输出";
+    for (uint32_t index = 0; index < inode.source->num_outputs(); ++index)
+    {  
       uint32_t eid = idx.entry_id(nid, index);
+      LOG(INFO)<<"遍历eid=====   "<<eid;
       exec->out_array.push_back(data_entry_[eid]);
-      if (addto_entry.at(eid) != 0) {
+      if (addto_entry.at(eid) != 0) 
+      {
         exec->req.push_back(kAddTo);
-      } else if (vstorage_inplace[eid] >= 0) {
+        LOG(INFO)<<"kAddTo   ";
+      } 
+      else if 
+      (vstorage_inplace[eid] >= 0) 
+      {
         exec->req.push_back(kWriteInplace);
-      } else if (vstorage_inplace[eid] == -2) {
+        LOG(INFO)<<"kWriteInplace   ";
+      } 
+      else if 
+      (vstorage_inplace[eid] == -2)
+      {
         // -2 indicate that the entry is never referenced.
         exec->req.push_back(kNullOp);
-      } else {
+        LOG(INFO)<<"kNullOp   ";
+      } 
+      else
+      {
         exec->req.push_back(kWriteTo);
+        LOG(INFO)<<"kWriteTo   ";
       }
     }
   }
