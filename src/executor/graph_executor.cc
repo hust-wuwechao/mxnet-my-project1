@@ -1516,7 +1516,7 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
   std::vector<PoolEntry> pool_info;
 
   // assign array to head gradient
-  LOG(INFO)<<"num_forward_inputs_=="<<num_forward_inputs_<<"    idx.input_nodes()=="<<idx.input_nodes();
+  LOG(INFO)<<"num_forward_inputs_=="<<num_forward_inputs_<<"    idx.input_nodes().size（）=="<<idx.input_nodes().size();
   for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i) 
   {
     uint32_t nid = idx.input_nodes().at(i);
