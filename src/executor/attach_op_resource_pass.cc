@@ -104,9 +104,9 @@ void AttachOpResources(
     {
       requested.push_back(ResourceManager::Get()->Request(ctx, ResourceRequest::kTempSpace));
     }
-   
+  LOG(INFO)<<"requested.size()  "<<requested.size(); 
   }
-  LOG(INFO)<<"requested.size()  "<<requested.size();
+  
 }
 
 void AttachOpResources(const Graph& g) 
