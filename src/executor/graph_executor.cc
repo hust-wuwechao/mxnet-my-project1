@@ -37,7 +37,8 @@
 namespace mxnet {
 namespace exec {
 
-GraphExecutor::GraphExecutor() {
+GraphExecutor::GraphExecutor() 
+{
   LOG(INFO)<<"进入GraphExecutor()";
   log_verbose_ = dmlc::GetEnv("MXNET_EXEC_VERBOSE_LOGGING", false);
 }
@@ -1465,7 +1466,9 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
 
 // initialize the memory of each entries//
 //  为每一个实体分配内存
-void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
+void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
+{
+  LOG(INFO)<<"进入InitDataEntryMemory";
   using nnvm::DTypeVector;
   using nnvm::ShapeVector;
   using nnvm::StorageVector;
@@ -1484,36 +1487,44 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool) {
   CHECK_EQ(idx.num_node_entries(), vdtype.size());
   CHECK_EQ(idx.num_node_entries(), vstorage.size());
   CHECK_EQ(data_entry_.size(), vshape.size());
+  
   std::vector<Context> data_context(idx.num_node_entries());
   std::vector<NDArrayStorageType> data_storage_type(idx.num_node_entries(), kUndefinedStorage);
+  
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
   {
-
     for (uint32_t i = 0; i < idx[nid].source->num_outputs(); ++i)
      {
-      
 
       auto eid = idx.entry_id(nid, i);
-      data_context[eid] = vctx[nid];
-      CHECK_NE(vstorage_type[nid], kUndefinedStorage);
+      data_context[eid] = vctx[nid]; //  这个输出节点的上下文
+      CHECK_NE(vstorage_type[nid], kUndefinedStorage);// 
       data_storage_type[eid] = (NDArrayStorageType) vstorage_type[nid];
-
+      //  如果这个节点的存储类型
     }
   }
 
   // information about the pool
-  struct PoolEntry {
+  //  存储池子的实体
+  struct PoolEntry 
+  {
     Context ctx;
     size_t bytes;
     NDArrayStorageType stype;
   };
+  //  池子实体向量
   std::vector<PoolEntry> pool_info;
 
   // assign array to head gradient
-  for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i) {
+  LOG(INFO)<<"num_forward_inputs_=="<<num_forward_inputs_<<"    idx.input_nodes()=="<<idx.input_nodes();
+  for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i) 
+  {
     uint32_t nid = idx.input_nodes().at(i);
+
     uint32_t oid = head_grad_map_.at(idx[nid].source);
+
     uint32_t eid = idx.entry_id(idx.outputs()[oid]);
+
     NDArrayStorageType stype = (NDArrayStorageType) vstorage_type[eid];
     CHECK_NE(vshape[eid].ndim(), 0U);
     CHECK_NE(vdtype[eid], -1);

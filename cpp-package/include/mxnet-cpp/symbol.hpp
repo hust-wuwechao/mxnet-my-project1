@@ -391,8 +391,8 @@ inline Executor *Symbol::SimpleBind(
   InferExecutorArrays(context, &arg_arrays, &grad_arrays, &grad_reqs,
                       &aux_arrays, args_map, arg_grad_store, grad_req_type,
                       aux_map);
-  LOG(INFO)<<"SimpleBind进入return new Executor";
-  LOG(INFO)<<"arg_arrays  "<<arg_arrays.size();
+  LOG(INFO)<<"SimpleBind进入return new Executor ";
+  LOG(INFO)<<"arg_arrays   "<<arg_arrays.size();
   LOG(INFO)<<"grad_arrays  "<<grad_arrays.size();
   LOG(INFO)<<"grad_reqs  "<<grad_reqs.size();
   LOG(INFO)<<" aux_arrays  "<< aux_arrays.size();

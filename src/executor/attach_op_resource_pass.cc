@@ -34,7 +34,9 @@ void AttachOpResources(
     const Graph& g,
     const OpExecVector& op_execs,
     size_t start_nid,
-    size_t end_nid) {
+    size_t end_nid) 
+{
+  LOG(INFO)<<"进入void AttachOpResources";
   static auto& fresource =
       nnvm::Op::GetAttr<FResourceRequest>("FResourceRequest");
   static auto& fresource_ex =
@@ -46,7 +48,8 @@ void AttachOpResources(
   // Use global resource pool for each executor for now.
   std::map<Context, Resource> cached_temp;
   // Resource allocation
-  for (uint32_t nid = start_nid; nid < end_nid; ++nid) {
+  for (uint32_t nid = start_nid; nid < end_nid; ++nid) 
+  {
     const auto& inode = idx[nid];
     if (inode.source->is_variable()) continue;
     const Context &ctx = vctx[nid];
@@ -63,33 +66,51 @@ void AttachOpResources(
                                                 vdispatch[nid])
                              : fresource[op](inode.source->attrs);
       // Get the resource of temporal space.
-      for (const ResourceRequest& req : reqs) {
-        if (req.type == ResourceRequest::kTempSpace) {
-          if (cached_temp.count(ctx) != 0) {
+      for (const ResourceRequest& req : reqs) 
+      {
+        if (req.type == ResourceRequest::kTempSpace) 
+        {
+          //  如果存在。直接添加
+          if (cached_temp.count(ctx) != 0) 
+          {
+            //std::vector<Resource> mxnet::OpContext::requested
             requested.push_back(cached_temp.at(ctx));
-          } else {
+          }
+           else 
+          {
             Resource r = ResourceManager::Get()->Request(ctx, req);
             requested.push_back(r);
             cached_temp[ctx] = r;
           }
-        } else if (req.type == ResourceRequest::kRandom) {
+        } 
+        else if (req.type == ResourceRequest::kRandom) 
+        {
           requested.push_back(ResourceManager::Get()->Request(ctx, req));
-        } else if (req.type == ResourceRequest::kParallelRandom) {
+        }
+
+        else if (req.type == ResourceRequest::kParallelRandom) 
+        {
           requested.push_back(ResourceManager::Get()->Request(ctx, req));
-        } else {
+        } 
+        else 
+        {
           LOG(FATAL) << "resource type not yet supported";
         }
       }
       CHECK(vdispatch[nid] != DispatchMode::kUndefined);
     }
     // extra resource requests for storage fallback
-    if (vdispatch[nid] == DispatchMode::kFComputeFallback) {
+    if (vdispatch[nid] == DispatchMode::kFComputeFallback) 
+    {
       requested.push_back(ResourceManager::Get()->Request(ctx, ResourceRequest::kTempSpace));
     }
+   
   }
+  LOG(INFO)<<"requested.size()  "<<requested.size();
 }
 
-void AttachOpResources(const Graph& g) {
+void AttachOpResources(const Graph& g) 
+{
   const auto& op_execs = g.GetAttr<OpExecVector>("op_execs");
   AttachOpResources(g, op_execs, 0, g.indexed_graph().num_nodes());
 }

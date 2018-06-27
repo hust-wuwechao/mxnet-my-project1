@@ -269,13 +269,19 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
   // initialize the nodes
   const auto& inode = idx[i];
   if (inode.source->is_variable()) return;
+
   const nnvm::Op *op = inode.source->op();
+
   ExecType exec_type = ExecType::kSync;
+
   std::vector<uint32_t> mutate_index;
-  if (fmutate_inputs.count(op)) {
+
+  if (fmutate_inputs.count(op)) 
+  {
     mutate_index = fmutate_inputs[op](inode.source->attrs);
   }
-  if (fexec_type.count(op)) {
+  if (fexec_type.count(op)) 
+  {
     exec_type = fexec_type[op](inode.source->attrs);
   }
   CHECK(dispatch_modes[i] != DispatchMode::kUndefined);
@@ -294,7 +300,9 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
     // FStatefulComputeEx is dispatched only when dispatch_mode is DispatchMode::kFComputeEx
     if (fcompute_ex != nullptr && dispatch_modes[i] == DispatchMode::kFComputeEx) {
       ret[i] = std::make_shared<StatefulComputeExExecutor>(state, fcompute_ex, exec_type);
-    } else {
+    }
+     else
+   {
       FStatefulCompute fcompute = common::GetFCompute<FStatefulCompute>(
           op, "FStatefulCompute", vctx[i]);
       CHECK(fcompute != nullptr)
@@ -303,7 +311,9 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
       ret[i] = std::make_shared<StatefulComputeExecutor>(state, fcompute,
                                                          exec_type, mutate_index);
     }
-  } else if (is_layer_backward.get(op, false)) {
+  }
+   else if (is_layer_backward.get(op, false)) 
+  {
     CHECK_GE(inode.control_deps.size(), 1);
     uint32_t fwd_id = inode.control_deps[0];
     CHECK(vctx[fwd_id] == vctx[i]);
@@ -314,7 +324,9 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
     if (fcompute_ex != nullptr && dispatch_modes[i] == DispatchMode::kFComputeEx) {
       ret[i] = std::make_shared<StatefulComputeExExecutor>(
           ret[fwd_id].get()->state(), fcompute_ex, exec_type);
-    } else {
+    } 
+    else 
+    {
       FStatefulCompute fcompute = common::GetFCompute<FStatefulCompute>(
           op, "FStatefulCompute", vctx[i]);
       CHECK(fcompute != nullptr)
@@ -323,7 +335,9 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
       ret[i] = std::make_shared<StatefulComputeExecutor>(
           ret[fwd_id].get()->state(), fcompute, exec_type, mutate_index);
     }
-  } else {
+  } 
+  else 
+  {
     FCompute fcompute = common::GetFCompute<FCompute>(op, "FCompute", vctx[i]);
     FComputeEx fcomp_ex = common::GetFCompute<FComputeEx>(op, "FComputeEx", vctx[i]);
     if (fcomp_ex != nullptr && dispatch_modes[i] == DispatchMode::kFComputeEx) {
@@ -339,15 +353,24 @@ void CreateOpExecs(const Graph& g, OpExecVector* p_ret, size_t i) {
 }
 
 
-// pass to attach operator executors
-Graph AttachOpExecs(Graph g) {
+//   pass to attach operator executors
+//   为了每一个operator分配一个执行器
+Graph AttachOpExecs(Graph g) 
+{
   const auto& idx = g.indexed_graph();
+
+  // 
   OpExecVector ret(idx.num_nodes());
-  for (size_t i = 0; i < idx.num_nodes(); ++i) {
+
+  for (size_t i = 0; i < idx.num_nodes(); ++i) 
+  {
+    // 继续追踪
     CreateOpExecs(g, &ret, i);
   }
   g.attrs["op_execs"] = std::make_shared<nnvm::any>(ret);
+
   return g;
+
 }
 
 }  // namespace exec

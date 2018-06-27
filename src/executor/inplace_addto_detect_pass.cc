@@ -32,7 +32,9 @@
 namespace mxnet {
 namespace exec {
 
-Graph DetectInplaceAddTo(Graph g) {
+Graph DetectInplaceAddTo(Graph g) 
+{
+
   nnvm::StorageVector storage_id =
       g.MoveCopyAttr<nnvm::StorageVector>("storage_id");
   std::vector<int> storage_inplace_index =
@@ -44,31 +46,45 @@ Graph DetectInplaceAddTo(Graph g) {
   std::vector<int> addto_entry(idx.num_node_entries(), 0);
   std::vector<int> skip_plus_node(idx.num_nodes(), 0);
 
-  for (auto& e : idx.outputs()) {
+  for (auto& e : idx.outputs()) 
+  {
     ++ref_count[idx.entry_id(e)];
   }
-  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) {
+  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
+  {
     for (auto &e : idx[nid].inputs) {
       ++ref_count[idx.entry_id(e)];
     }
   }
 
-  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) {
+  for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid)
+   {
     const auto& inode = idx[nid];
+
     if (inode.source->op() != ewise_plus_op) continue;
     int sid = storage_id[idx.entry_id(inode.inputs[0])];
     if (sid != storage_id[idx.entry_id(nid, 0)]) continue;
     if (idx[inode.inputs[0].node_id].source->is_variable()) continue;
     if (idx[inode.inputs[1].node_id].source->is_variable()) continue;
+
     uint32_t eid_rhs  = idx.entry_id(inode.inputs[1]);
+
     if (ref_count[eid_rhs] != 1) continue;
+    
     if (inode.inputs[0].node_id >= inode.inputs[1].node_id) continue;
+
     // TODO(haibin) support inplace addto for Dynamic Storage
+
     if (storage_id[eid_rhs] == kDynamicStorageID) continue;
+
     CHECK_NE(storage_id[eid_rhs], sid);
+
     storage_id[eid_rhs] = sid;
+
     addto_entry[eid_rhs] = 1;
+
     storage_inplace_index[eid_rhs] = -1;
+
     skip_plus_node[nid] = 1;
   }
 
@@ -77,6 +93,7 @@ Graph DetectInplaceAddTo(Graph g) {
       std::move(storage_inplace_index));
   g.attrs["addto_entry"] = std::make_shared<nnvm::any>(std::move(addto_entry));
   g.attrs["skip_plus_node"] = std::make_shared<nnvm::any>(std::move(skip_plus_node));
+  
   return g;
 }
 
