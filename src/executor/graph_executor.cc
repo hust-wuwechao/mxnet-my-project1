@@ -264,7 +264,8 @@ inline ValueType get_node_attr(
  * This is triggered by both simple_bind and bind flows.
  */
 nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
-                                         const std::vector<OpReqType>& grad_req_types) {
+                                         const std::vector<OpReqType>& grad_req_types) 
+{
   LOG(INFO)<<"进入InitFullGraph";
   using nnvm::NodePtr;
   using nnvm::NodeEntry;
@@ -273,31 +274,39 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   LOG(INFO)<<"进入InitFullGraph";
   
   num_forward_outputs_ = symbol.outputs.size();
+
   LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
+
   
 
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
+
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
 
 
   nnvm::Graph g;
+
+  //  图的输出等于的符号的输出。
+
   g.outputs = symbol.outputs;
 
 
   bool need_grad = false;
+
   for (OpReqType req : grad_req_types) 
   {
     //  只要有一个需要梯度写回南无需要反向传播
-     LOG(INFO)<<"req"<<req;
-    if (req != kNullOp) need_grad = true;
+    LOG(INFO)<<"req====="<<req;
+    if (req != kNullOp) 
+    need_grad = true;
   }
   //
   if (!need_grad) return g;
-  //对于每一个输出分配输出节点
-  LOG(INFO)<<"g.outputs.size()"<<g.outputs.size();
+  //对于每一个输出分配输出节点梯度节点
+  LOG(INFO)<<"g.outputs.size()===="<<g.outputs.size();
   for (size_t i = 0; i < g.outputs.size(); ++i) 
   {
-    
+  
     NodeEntry ngrad{nnvm::Node::Create(), 0, 0};
     head_grad_entry_.emplace_back(AttrHint(ngrad, g.outputs[i]));
     head_grad_map_[ngrad.node.get()] = i;
@@ -305,9 +314,16 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   }
   //  得到所有的输入参数，包括输入data   label 
   std::vector<NodePtr> args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);
+
+  LOG(INFO)<<"args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);之后参数的个数="<<args.size();
   std::vector<NodeEntry> xs;
+
   LOG(INFO)<<"grad_req_types.size()"<<grad_req_types.size();
-  for (size_t i = 0; i < grad_req_types.size(); ++i) {
+
+  //  XS表示需要梯度的参数
+
+  for (size_t i = 0; i < grad_req_types.size(); ++i) 
+  {
     if (grad_req_types[i] != kNullOp) 
     {
       xs.emplace_back(NodeEntry{args[i], 0, 0});
@@ -315,6 +331,7 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   }
 
   int do_mirror = dmlc::GetEnv("MXNET_BACKWARD_DO_MIRROR", 0);
+
   auto need_mirror = [do_mirror](const nnvm::Node& node) -> int {
     if (node.is_variable()) return 0;
     const std::string& type = node.attrs.op->name;
@@ -338,13 +355,25 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   //  生成梯度的位置核心子啊这个函数。
 
   LOG(INFO)<<" nnvm::Graph g_grad = nnvm::pass::Gradient";
+  //  实际上是生成梯度节点，我们只是知道对应的参数需要计算梯度
+  //  那么对应的梯度是如何计算呢？
+  //  反向的图是什么样子呢？？？
+  //  我们尝试一下哈。
+
   nnvm::Graph g_grad = nnvm::pass::Gradient(
       g, symbol.outputs, xs, head_grad_entry_,
       AggregateGradient, need_mirror, nullptr,
       zero_ops, "_copy");
+  // 至此自动生成的完成的反向的计算的节点了。
+
   LOG(INFO)<<"加入梯度之前"<<g.outputs.size();
+
   LOG(INFO)<<"g_grad.outputs.size()"<<g_grad.outputs.size();
+  //  这2个显然应该相等啊
   CHECK_EQ(g_grad.outputs.size(), xs.size());
+
+  //  对于每一个梯度的输出
+  //  加入到图的输出里面去
   for (const auto &e : g_grad.outputs) 
   {
     // LOG(INFO)<<"g.outputs.push_back(e)里面的const auto &e : g_grad.outputs"<<e;
@@ -634,7 +663,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     return nd.ctx();
   };
   // 参数上下文
-  LOG(INFO)<<"进入进入 GraphExecutor::Init  in_arg_ctxes     in_args.size()"<<in_args.size();
+  LOG(INFO)<<"进入进入 GraphExecutor::Init    in_args.size()"<<in_args.size();
   std::vector<Context> in_arg_ctxes(in_args.size());
   //
   LOG(INFO)<<"in_args.size()"<<in_args.size();
@@ -644,49 +673,60 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   LOG(INFO)<<"arg_grad_store.size()"<<arg_grad_store.size();
   std::vector<Context> arg_grad_ctxes(arg_grad_store.size());
 
+
+  
   std::transform(arg_grad_store.begin(), arg_grad_store.end(), arg_grad_ctxes.begin(), get_ctx2);
   // 辅助空间上下文
 
+
   std::vector<Context> aux_state_ctxes(aux_states.size());
   std::transform(aux_states.begin(), aux_states.end(), aux_state_ctxes.begin(), get_ctx1);
+
 
   nnvm::Graph g = InitGraph(symbol, default_ctx, ctx_map, in_arg_ctxes,
                             arg_grad_ctxes, aux_state_ctxes, grad_req_types);
 
 
-   LOG(INFO)<<"回到init";
+   LOG(INFO)<<"InitGraph回到init";
   // create arg_shapes and arg_dtypes for shape and type inferences
+  
   const auto& idx = g.indexed_graph();
 
   const auto& mutable_nodes = idx.mutable_input_nodes();
-  LOG(INFO)<<" mutable_nodes"<<mutable_nodes.size();
+
+  LOG(INFO)<<" mutable_nodes数目为"<<mutable_nodes.size();
   
   size_t arg_top = 0, aux_top = 0;
-  LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
+  LOG(INFO)<<"idx.num_node_entries()实体节点的数目="<<idx.num_node_entries();
+
+
   data_entry_.resize(idx.num_node_entries());
+  //  初始化参数的形状
   nnvm::ShapeVector arg_shapes;
+  //  初始化参数的类型
   nnvm::DTypeVector arg_dtypes;
+  //  实体的存储类型
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
   //  便利每一个输入
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
+  
   // X ,W0,b0,w1 ,b1 ,label
-
   for (size_t i = 0; i < num_forward_inputs_; ++i) 
   {
     //  i= 0,1,2,3,4,5,6,7
     //  nid=0,1,2,5,6,9,10,12
     //  eid=0,1,2,5,6,9.10.12
     const uint32_t nid = idx.input_nodes().at(i);
-    LOG(INFO)<<"const uint32_t nid = idx.input_nodes().at(i)   nid=====;"<<nid;
+    LOG(INFO)<<"  nid=="<<nid;
     const std::string& arg_name = idx[nid].source->attrs.name;
-    LOG(INFO)<<"对应  arg_name     "<<arg_name;
+    LOG(INFO)<<"对应  arg_name  "<<arg_name;
     // 获取对应的实体ID
     size_t eid = idx.entry_id(nid, 0);
-    LOG(INFO)<<"size_t eid = idx.entry_id(nid, 0); 对应eid"<<eid;
+    LOG(INFO)<<" eid = idx.entry_id(nid, 0)对应eid=="<<eid;
     // 如果他的写依赖的节点数目不等于0
     // 
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
-    // 如果这个节点的
+    // 如果这个节点的需要写入的节点数目是？
     if (mutable_nodes.count(nid))
     {
       
@@ -800,6 +840,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // Initialize the rest attributes of the graph.
   // This function can be called by regular bind
   // operation flow as well.
+
   FinishInitGraph(symbol, g, shared_exec, feed_dict);
 
 
@@ -1239,55 +1280,74 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // Initialize arg_shapes and arg_dtypes for shape and type inferences.
   // It contains all in_args and aux_states' shapes and types in a certain order.
 
-
+  LOG(INFO)<<"由InitGraph回到init";
   const nnvm::IndexedGraph& idx = g.indexed_graph();
   // 索引图是如何构造的？？？？？
   nnvm::ShapeVector arg_shapes(idx.input_nodes().size(), TShape());
   nnvm::DTypeVector arg_dtypes(idx.input_nodes().size(), -1);
   StorageTypeVector arg_stypes(idx.input_nodes().size(), kUndefinedStorage);
-  for (size_t i = 0; i < num_forward_inputs_; ++i) {
+
+  for (size_t i = 0; i < num_forward_inputs_; ++i) 
+  {
     const uint32_t nid = idx.input_nodes().at(i);
     const std::string& name = idx[nid].source->attrs.name;
+    LOG(INFO)<<"输入的参数的名字为"<<name;
+
     auto it1 = arg_shape_map.find(name);
-    if (arg_shape_map.end() != it1) {
+    
+    if (arg_shape_map.end() != it1)
+     {
       arg_shapes[i] = it1->second;
     }
     auto it2 = arg_dtype_map.find(name);
-    if (arg_dtype_map.end() != it2) {
+
+    if (arg_dtype_map.end() != it2)
+     {
       arg_dtypes[i] = it2->second;
     }
     auto it3 = arg_stype_map.find(name);
-    if (arg_stype_map.end() != it3) {
+    if (arg_stype_map.end() != it3) 
+    {
       arg_stypes[i] = it3->second;
     }
   }
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
-  if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) {
+
+  if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
+  {
     HandleInferShapeError(num_forward_inputs_, g.indexed_graph(),
                           g.GetAttr<nnvm::ShapeVector>("shape"));
   }
 
   g = InferType(std::move(g), std::move(arg_dtypes), "__dtype__");
-  if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
+
+  if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) 
+  {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
                          g.GetAttr<nnvm::DTypeVector>("dtype"));
   }
 
   g = InferStorageType(std::move(g), std::move(arg_stypes), "__storage_type__");
-  if (g.GetAttr<size_t>("storage_type_num_unknown_nodes") != 0U) {
+  
+  if (g.GetAttr<size_t>("storage_type_num_unknown_nodes") != 0U) 
+  {
     HandleInferStorageTypeError(num_forward_inputs_, g.indexed_graph(),
                                 g.GetAttr<StorageTypeVector>("storage_type"));
   }
 
   // Create in_args, arg_grads, and aux_states using
   // the inferred shapes and dtypes.
-  if (nullptr == shared_buffer) {  // regular simple bind
+  if (nullptr == shared_buffer)
+   {  // regular simple bind
+    LOG(INFO)<<"进入核心InitArguments   对于regular simple bind";
     InitArguments(idx, g.GetAttr<nnvm::ShapeVector>("shape"),
                   g.GetAttr<nnvm::DTypeVector>("dtype"),
                   g.GetAttr<StorageTypeVector>("storage_type"),
                   in_arg_ctxes, arg_grad_ctxes, aux_state_ctxes,
                   grad_req_types, in_arg_vec, arg_grad_vec, aux_state_vec);
-  } else {  // simple bind using shared data arrays and shared_exec
+  } 
+  else 
+  {  // simple bind using shared data arrays and shared_exec
     InitArguments(idx, g.GetAttr<nnvm::ShapeVector>("shape"),
                   g.GetAttr<nnvm::DTypeVector>("dtype"),
                   g.GetAttr<StorageTypeVector>("storage_type"),
@@ -1460,7 +1520,7 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
     num_forward_nodes_ = std::max(
                     num_forward_nodes_, static_cast<size_t>(idx.outputs()[i].node_id + 1));
   }
-  LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
+  LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
   return g;
 }
 
@@ -1520,19 +1580,24 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
   for (size_t i = num_forward_inputs_; i < idx.input_nodes().size(); ++i) 
   {
     uint32_t nid = idx.input_nodes().at(i);
-
+    
     uint32_t oid = head_grad_map_.at(idx[nid].source);
 
     uint32_t eid = idx.entry_id(idx.outputs()[oid]);
 
     NDArrayStorageType stype = (NDArrayStorageType) vstorage_type[eid];
+
     CHECK_NE(vshape[eid].ndim(), 0U);
     CHECK_NE(vdtype[eid], -1);
     auto data_eid = idx.entry_id(nid, 0);
     // initialize based on storage_type
-    if (stype != kDefaultStorage) {
+    if (stype != kDefaultStorage) 
+    {
+      //  为节点的输入的实体分配内存
       data_entry_[data_eid] = NDArray(stype, vshape[eid], data_context[eid], true, vdtype[eid]);
-    } else {
+    } 
+    else 
+    {
       data_entry_[data_eid] = NDArray(vshape[eid], data_context[eid], false, vdtype[eid]);
     }
     if (log_verbose_) {
@@ -1541,27 +1606,38 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
     }
   }
   // get maximum bytes in each pool
-  for (size_t i = 0; i < vshape.size(); ++i) {
+  for (size_t i = 0; i < vshape.size(); ++i) 
+  {
     if (!data_entry_[i].is_none()) continue;
     size_t bytes = vshape[i].Size() * mshadow::mshadow_sizeof(vdtype[i]);
     int storage_id = vstorage[i];
+
     // skip pool allocation for kBadStorageID, kExternalStorageID and kDynamicStorageID
     if (storage_id < 0) continue;
+
     size_t sid = static_cast<size_t>(storage_id);
-    if (sid >= pool_info.size()) {
+
+    if (sid >= pool_info.size()) 
+    {
       pool_info.resize(sid + 1, PoolEntry{Context::CPU(), size_t(0), kUndefinedStorage});
     }
     PoolEntry& info = pool_info[sid];
-    if (info.bytes == 0) {
+
+    if (info.bytes == 0) 
+    {
       info = PoolEntry{data_context[i], bytes, data_storage_type[i]};
-    } else {
+    } 
+    else
+    {
       info.bytes = std::max(info.bytes, bytes);
     }
   }
   // construct the re-use pool, if needed
   std::multimap<size_t, NDArray> free_pool;
-  if (shared_pool != nullptr) {
-    for (const NDArray& nd : *shared_pool) {
+  if (shared_pool != nullptr) 
+  {
+    for (const NDArray& nd : *shared_pool)
+    {
       size_t bytes = nd.shape().Size() * mshadow::mshadow_sizeof(nd.dtype());
       free_pool.insert(std::make_pair(bytes, nd));
     }
@@ -1572,27 +1648,34 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
 
   // sort the pool info the descending order before allocating memory
   std::vector<size_t> sorted_pool_index;
-  for (size_t i = 0; i < pool_info.size(); i++) {
+  for (size_t i = 0; i < pool_info.size(); i++)
+  {
     sorted_pool_index.push_back(i);
   }
-  auto pool_comparator = [&pool_info](int lhs, int rhs){
+  auto pool_comparator = [&pool_info](int lhs, int rhs)
+  {
     return pool_info[lhs].bytes > pool_info[rhs].bytes;
   };
+  //  按照标准的对比器件。
   std::sort(sorted_pool_index.begin(), sorted_pool_index.end(), pool_comparator);
 
-  for (size_t i : sorted_pool_index) {
+  for (size_t i : sorted_pool_index) 
+  {
     const Context& ctx = pool_info[i].ctx;
     size_t bytes = pool_info[i].bytes;
     bool allocated = false;
-    for (auto it = free_pool.lower_bound(bytes); it != free_pool.end(); ++it) {
-      if (it->second.ctx() == ctx && it->first >= bytes) {
+    for (auto it = free_pool.lower_bound(bytes); it != free_pool.end(); ++it) 
+    {
+      if (it->second.ctx() == ctx && it->first >= bytes) 
+      {
         data_pool_[i] = it->second;
         free_pool.erase(it);
         allocated = true;
         break;
       }
     }
-    if (!allocated) {
+    if (!allocated)
+     {
       size_t nword = (bytes + 3) / 4;
       CHECK_LE(nword, std::numeric_limits<nnvm::dim_t>::max());
       // allocate float arrays
@@ -1901,7 +1984,9 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     //  采用分段的方式。
     //  如果是一个变量或者  长度太长了。。或者是异步执行。
     int  is_a=node->is_variable()?1:0;
-    LOG(INFO)<<"nid="<<nid<<"是不是变量？？？？ "<<is_a;
+    LOG(INFO)<<"nid====="<<nid<<"   是不是变量== "<<is_a;
+    //  只要3折有一个满足即可。
+
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
     op_node.exec->exec_type() != ExecType::kSync) 
     {
@@ -2060,13 +2145,16 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
     //  这个是干嘛的？？？？？？？
     //  这段世他的变量和操作在一起进行。
     auto seg_op = cached_seg_opr_[nid];
-    // Check segments first
-    //  段模式优先
+    //  Check segments first
+    //  
+    //  我们看下哪一些条件存在哈。
+    //
     if (monitor_callback_ == nullptr && seg_op.opr != nullptr && seg_op.topo_end <= topo_end) 
     {
-      LOG(INFO)<<"进入段模式";
+      //LOG(INFO)<<"进入段模式";
       bool profiling = profiler::Profiler::Get()->GetState() == profiler::Profiler::kRunning;
       Engine::Get()->Push(seg_op.opr, seg_op.ctx, 0, profiling);
+      //  nid 直接可以加上。
       nid = seg_op.topo_end - 1;
       continue;
     }
@@ -2083,12 +2171,14 @@ void GraphExecutor::RunOps(bool is_train, size_t topo_start, size_t topo_end)
       CHECK_EQ(inode.inputs.size(), 1U);
       CHECK_EQ(opnode.exec->in_array.size(), 1U);
       CHECK_EQ(opnode.exec->out_array.size(), 1U);
+      //  直接进行数据复制
       CopyFromTo(opnode.exec->in_array[0], &(opnode.exec->out_array[0]));
     }
     else if (opnode.cached_opr != nullptr) 
     {
       bool profiling = profiler::Profiler::Get()->GetState() == profiler::Profiler::kRunning;
       LOG(INFO)<<"Engine::Get()->Push(opnode.cached_opr, opnode.ctx, 0, profiling);";
+      // 讲对应的OP送到队列去执行。
       Engine::Get()->Push(opnode.cached_opr, opnode.ctx, 0, profiling);
     } 
     else 
@@ -2209,7 +2299,15 @@ Executor *Executor::SimpleBind(nnvm::Symbol symbol,
                                Executor* shared_exec) 
   {
   //  这里面自然会调用GraphExecutor()的构造函数。
+  //   构造函数啥都没有做，看看，什么参数都不用传递
   auto exec = new exec::GraphExecutor();
+  //  然后会调用Init函数。
+  //  实现形状的推断
+  //  反向计算的规划
+  //  中间结果的内存的规划
+  //  设备上下文的分配
+  //  实体内存的分配
+  // 这里面的symbol 其实就是最后的一个节点的。
 
   exec->Init(symbol, default_ctx, group2ctx,
              in_arg_ctxes, arg_grad_ctxes, aux_state_ctxes,
