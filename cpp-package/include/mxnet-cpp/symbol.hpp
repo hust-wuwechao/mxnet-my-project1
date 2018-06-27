@@ -239,56 +239,98 @@ inline void Symbol::InferExecutorArrays(
     const std::map<std::string, NDArray> &args_map,
     const std::map<std::string, NDArray> &arg_grad_store,
     const std::map<std::string, OpReqType> &grad_req_type,
-    const std::map<std::string, NDArray> &aux_map) const {
-
+    const std::map<std::string, NDArray> &aux_map) const 
+ {
+  // 此时还没有梯度参数
   const auto arg_name_list = ListArguments();
+
   std::vector<std::vector<mx_uint> > in_shapes, aux_shapes, out_shapes;
+
   std::map<std::string, std::vector<mx_uint> > arg_shapes;
 
-  for (const auto &arg_name : arg_name_list) {
+  // const std::map<std::string, NDArray> &args_map
+  for (const auto &arg_name : arg_name_list)
+  {
+    LOG(INFO)<<"参数为   "<< arg_name;
     auto iter = args_map.find(arg_name);
-    if (iter != args_map.end()) {
+    if (iter != args_map.end())
+    {
       arg_shapes[arg_name] = iter->second.GetShape();
     }
   }
+  //  推测类型
 
+  LOG(INFO)<<"InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);";
+  
   InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);
-
-  for (size_t i = 0; i < in_shapes.size(); ++i) {
+  LOG(INFO)<<" in_shapes.size()  "<< in_shapes.size();
+  for (size_t i = 0; i < in_shapes.size(); ++i)
+   {
+     LOG(INFO)<<".....................................................................";
     const auto &shape = in_shapes[i];
     const auto &arg_name = arg_name_list[i];
     auto iter_arg = args_map.find(arg_name);
-    if (iter_arg != args_map.end()) {
+    if (iter_arg != args_map.end())
+    {
+      //  加入输入数组
+      LOG(INFO)<<" arg_arrays->push_back(iter_arg->second);";
       arg_arrays->push_back(iter_arg->second);
-    } else {
+    } 
+    else 
+    {
+      //  如果没有 直接构造
+      LOG(INFO)<<"  arg_arrays->push_back(NDArray(shape, context, false));";
       arg_arrays->push_back(NDArray(shape, context, false));
       NDArray::SampleGaussian(0, 1, &arg_arrays->back());
     }
+    //  找到参数对应的梯度，将梯度送到梯度数组里面。
     auto iter_grad = arg_grad_store.find(arg_name);
-    if (iter_grad != arg_grad_store.end()) {
+    if (iter_grad != arg_grad_store.end()) 
+    {
+      LOG(INFO)<<" grad_arrays->push_back(iter_grad->second);";
       grad_arrays->push_back(iter_grad->second);
-    } else {
+    } 
+    else 
+    {
+      //  没有找到。则构造一个。
+      LOG(INFO)<<" grad_arrays->push_back(NDArray(shape, context, false));";
       grad_arrays->push_back(NDArray(shape, context, false));
     }
+    // 
+    //LOG(INFO)<<"iter_req ="<<iter_req;
     auto iter_req = grad_req_type.find(arg_name);
-    if (iter_req != grad_req_type.end()) {
+    if (iter_req != grad_req_type.end()) 
+    {
+      LOG(INFO)<<" grad_reqs->push_back(iter_req->second);";
+      LOG(INFO)<<iter_req->second;
       grad_reqs->push_back(iter_req->second);
-    } else if (arg_name.rfind("data") == arg_name.length() - 4
+    } 
+    else if (arg_name.rfind("data") == arg_name.length() - 4
             || arg_name.rfind("label") == arg_name.length() - 5) {
+      LOG(INFO)<<" kNullOp";        
       grad_reqs->push_back(OpReqType::kNullOp);
-    } else {
+  
+    } 
+    else
+   {
+      LOG(INFO)<<"kWriteTo";
       grad_reqs->push_back(OpReqType::kWriteTo);
     }
   }
 
   const auto aux_name_list = ListAuxiliaryStates();
-  for (size_t i = 0; i < aux_shapes.size(); ++i) {
+  LOG(INFO)<<"aux_shapes.size()="<<aux_shapes.size();
+  for (size_t i = 0; i < aux_shapes.size(); ++i) 
+  {
     const auto &shape = aux_shapes[i];
     const auto &aux_name = aux_name_list[i];
     auto iter_aux = aux_map.find(aux_name);
-    if (iter_aux != aux_map.end()) {
+    if (iter_aux != aux_map.end()) 
+    {
       aux_arrays->push_back(iter_aux->second);
-    } else {
+    } 
+    else 
+    {
       aux_arrays->push_back(NDArray(shape, context, false));
       NDArray::SampleGaussian(0, 1, &aux_arrays->back());
     }
@@ -333,11 +375,11 @@ inline Executor *Symbol::SimpleBind(
   std::vector<NDArray> grad_arrays;
   std::vector<OpReqType> grad_reqs;
   std::vector<NDArray> aux_arrays;
-
+  LOG(INFO)<<"SimpleBind进入InferExecutorArrays";
   InferExecutorArrays(context, &arg_arrays, &grad_arrays, &grad_reqs,
                       &aux_arrays, args_map, arg_grad_store, grad_req_type,
                       aux_map);
-
+  LOG(INFO)<<"SimpleBind进入return new Executor";
   return new Executor(*this, context, arg_arrays, grad_arrays, grad_reqs,
                       aux_arrays);
 }

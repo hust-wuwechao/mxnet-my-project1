@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 
   auto net = mlp(layers);
 
-  Context ctx = Context::cpu();  // Use CPU for training
+  Context ctx = Context::cpu();   // Use CPU for training
 
   std::map<std::string, NDArray> args;
   args["X"] = NDArray(Shape(batch_size, image_size*image_size), ctx);
