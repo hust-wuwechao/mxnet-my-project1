@@ -232,6 +232,12 @@ inline void Symbol::InferShape(
   }
 }
 
+// 总体而言的作用是：
+//  y由于args_map已经包含了参数的数组。
+//  本质上上来说。推测每一个参数的形状，包括辅助状态。
+//  每一个同名的参数的梯度都是重新构造的。
+//  这仅仅是构造输入采纳数的数组
+//  二部包括中间数据的数组问题。
 inline void Symbol::InferExecutorArrays(
     const Context &context, std::vector<NDArray> *arg_arrays,
     std::vector<NDArray> *grad_arrays, std::vector<OpReqType> *grad_reqs,
@@ -261,12 +267,16 @@ inline void Symbol::InferExecutorArrays(
   //  推测类型
 
   LOG(INFO)<<"InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);";
-  
+
+
+  //  
+
+
   InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);
   LOG(INFO)<<" in_shapes.size()  "<< in_shapes.size();
   for (size_t i = 0; i < in_shapes.size(); ++i)
    {
-     LOG(INFO)<<".....................................................................";
+    LOG(INFO)<<".....................................................................";
     const auto &shape = in_shapes[i];
     const auto &arg_name = arg_name_list[i];
     auto iter_arg = args_map.find(arg_name);
@@ -359,7 +369,9 @@ inline void Symbol::InferArgsMap(
     auto iter_arg = known_args.find(arg_name);
     if (iter_arg != known_args.end()) {
       (*args_map)[arg_name] = iter_arg->second;
-    } else {
+    } 
+    else 
+    {
       (*args_map)[arg_name] = NDArray(shape, context, false);
       NDArray::SampleGaussian(0, 1, &(*args_map)[arg_name]);
     }
@@ -380,6 +392,10 @@ inline Executor *Symbol::SimpleBind(
                       &aux_arrays, args_map, arg_grad_store, grad_req_type,
                       aux_map);
   LOG(INFO)<<"SimpleBind进入return new Executor";
+  LOG(INFO)<<"arg_arrays  "<<arg_arrays.size();
+  LOG(INFO)<<"grad_arrays  "<<grad_arrays.size();
+  LOG(INFO)<<"grad_reqs  "<<grad_reqs.size();
+  LOG(INFO)<<" aux_arrays  "<< aux_arrays.size();
   return new Executor(*this, context, arg_arrays, grad_arrays, grad_reqs,
                       aux_arrays);
 }
