@@ -274,13 +274,11 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   LOG(INFO)<<"进入InitFullGraph";
   
   num_forward_outputs_ = symbol.outputs.size();
-
+  //  1
   LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
-
   
-
   num_forward_inputs_ = symbol.ListInputs(nnvm::Symbol::kAll).size();
-
+  //  8
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
 
 
@@ -301,8 +299,18 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
     need_grad = true;
   }
   //
+      /*   03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====1
+            [03:28:40] src/executor/graph_executor.cc:299: req=====0 */
+  //
   if (!need_grad) return g;
   //对于每一个输出分配输出节点梯度节点
+  // 1 
   LOG(INFO)<<"g.outputs.size()===="<<g.outputs.size();
   for (size_t i = 0; i < g.outputs.size(); ++i) 
   {
@@ -314,14 +322,14 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   }
   //  得到所有的输入参数，包括输入data   label 
   std::vector<NodePtr> args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);
-
+  // 8
   LOG(INFO)<<"args = symbol.ListInputs(nnvm::Symbol::kReadOnlyArgs);之后参数的个数="<<args.size();
   std::vector<NodeEntry> xs;
-
+  // 8
   LOG(INFO)<<"grad_req_types.size()"<<grad_req_types.size();
 
   //  XS表示需要梯度的参数
-
+  //  等于7个
   for (size_t i = 0; i < grad_req_types.size(); ++i) 
   {
     if (grad_req_types[i] != kNullOp) 
@@ -365,10 +373,11 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
       AggregateGradient, need_mirror, nullptr,
       zero_ops, "_copy");
   // 至此自动生成的完成的反向的计算的节点了。
-
+  //  1
   LOG(INFO)<<"加入梯度之前"<<g.outputs.size();
-
+  //  7
   LOG(INFO)<<"g_grad.outputs.size()"<<g_grad.outputs.size();
+
   //  这2个显然应该相等啊
   CHECK_EQ(g_grad.outputs.size(), xs.size());
 
@@ -403,6 +412,8 @@ static Graph AssignContext(Graph g,
   // default use default context.
   // 用户默认没有设置上下文
   LOG(INFO)<<"ctx_map.size()"<<ctx_map.size();
+  //  刚开始===0
+  //  所以实际上做到这一步就结束了。我们并没有显示的制定上下文。
   if (ctx_map.size() == 0) 
   {
 
@@ -656,7 +667,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
                          Executor* shared_exec,
                          const nnvm::NodeEntryMap<NDArray>& feed_dict) {
   // create in_arg_ctxes, arg_grad_ctxes, aux_state_ctxes
-  LOG(INFO)<<"进入 GraphExecutor::Init";
+  LOG(INFO)<<"进入 GraphExecutor::Init  本质上进入这个。。。。。。。。。。。";
   auto get_ctx1 = [](const NDArray& nd) { return nd.ctx(); };
   auto get_ctx2 = [default_ctx](const NDArray& nd) -> Context {
     if (nd.is_none()) return default_ctx;
@@ -667,6 +678,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   std::vector<Context> in_arg_ctxes(in_args.size());
   //
   LOG(INFO)<<"in_args.size()"<<in_args.size();
+
   std::transform(in_args.begin(), in_args.end(), in_arg_ctxes.begin(), get_ctx1);
   //    存储梯度的上下文
 
@@ -693,13 +705,12 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   const auto& idx = g.indexed_graph();
 
   const auto& mutable_nodes = idx.mutable_input_nodes();
-
+   //  0 
   LOG(INFO)<<" mutable_nodes数目为"<<mutable_nodes.size();
-  
+   //  27 个实体
   size_t arg_top = 0, aux_top = 0;
   LOG(INFO)<<"idx.num_node_entries()实体节点的数目="<<idx.num_node_entries();
-
-
+  //   27
   data_entry_.resize(idx.num_node_entries());
   //  初始化参数的形状
   nnvm::ShapeVector arg_shapes;
@@ -708,22 +719,28 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   //  实体的存储类型
   StorageTypeVector arg_stypes(idx.num_node_entries(), -1);
   //  便利每一个输入
+  // 8 
   LOG(INFO)<<"num_forward_inputs_"<<num_forward_inputs_;
   
-  // X ,W0,b0,w1 ,b1 ,label
+  // X ,W0,b0,w1 ,b1 ,w2, b2 ,label
   for (size_t i = 0; i < num_forward_inputs_; ++i) 
   {
-    //  i= 0,1,2,3,4,5,6,7
-    //  nid=0,1,2,5,6,9,10,12
-    //  eid=0,1,2,5,6,9.10.12
+    //    i= 0,1,2,3,4,5,6,7
+    //    nid=0,1,2,5,6,9,10,12
+    //    eid=0,1,2,5,6,9.10.12
+    //    我们只是便利每一个输入。
+    //    每一个输入的节点的第一个输出的节点的实体就是本事的参数
+    //    如果这个节点是可以修改的
+    //    那么这个节点的第一个输出节点就是辅助的空间的节点了。
     const uint32_t nid = idx.input_nodes().at(i);
     LOG(INFO)<<"  nid=="<<nid;
     const std::string& arg_name = idx[nid].source->attrs.name;
     LOG(INFO)<<"对应  arg_name  "<<arg_name;
-    // 获取对应的实体ID
+    //  获取对应的实体ID
+    //  获取输出的第一个输出的节点的ID
     size_t eid = idx.entry_id(nid, 0);
     LOG(INFO)<<" eid = idx.entry_id(nid, 0)对应eid=="<<eid;
-    // 如果他的写依赖的节点数目不等于0
+    //  如果他的写依赖的节点数目不等于0
     // 
     LOG(INFO)<<"mutable_nodes.count(nid)     结果为;   "<<mutable_nodes.count(nid);
     // 如果这个节点的需要写入的节点数目是？
@@ -745,8 +762,9 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
     }
      else 
     {
+      //  这个实体的ID就是对应于这个参数
       CHECK_LT(arg_top, in_args.size());
-
+      // 第一个实体对应的数据就是这个参数的本身。
       data_entry_[eid] = in_args[arg_top];
 
       arg_shapes.push_back(in_args[arg_top].shape());
@@ -764,20 +782,19 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       if (kNullOp != grad_req_types[arg_top])  aa=1;
 
       LOG(INFO)<<"kNullOp != grad_req_types[arg_top]      "<<aa;
-      // 如果这个参数需要计算梯度
-
+      // 如果这个参数需要计算梯
       if (kNullOp != grad_req_types[arg_top]) 
       {
         
-        // 依次遍历每一个输出，也就是需要计算的每一个梯度值
+        //   依次遍历每一个输出，也就是需要计算的每一个梯度值
         auto grad_oid = grad_store_.size() + num_forward_outputs_;
-           
+        //   
         auto grad_eid = idx.entry_id(idx.outputs()[grad_oid]);
-
+        //   让梯度的存储的类型和参数的类型一致。
         arg_stypes[grad_eid] = arg_grad_store[arg_top].storage_type();
-
+        //    请求类型和数组之间的关联。
         grad_store_.emplace_back(grad_req_types[arg_top], arg_grad_store[arg_top]);
-
+         
         arg_grad_map_.emplace(arg_name, arg_grad_store[arg_top]);
 
          LOG(INFO)<<"   arg_top      "<<arg_top<<" grad_oid  "<<grad_oid<<"  grad_eid  "<<grad_eid<<"  grad_store_.size "<<grad_store_.size()<<"  arg_grad_map_  "<<arg_grad_map_.size();
@@ -790,57 +807,62 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       ++arg_top;
       LOG(INFO)<<"**********************************************************************************";
     }
-    if (log_verbose_) {
+    if (log_verbose_) 
+    {
       LOG(INFO) << "\tassign data entry\t" << eid << " as "
                 << common::stype_string(data_entry_[eid].storage_type()) << " (input)";
     }
   }
 
   // expand arg_shapes and arg_dtypes to contain backward inputs
-
+  
   
   arg_shapes.resize(idx.input_nodes().size(), TShape());
 
-  
+  //  8
   LOG(INFO)<<"  idx.input_nodes().size()     "<<idx.input_nodes().size();
   
+  //  推测每一个中间的节点的数据的形状。
 
   g = InferShape(std::move(g), std::move(arg_shapes), "__shape__");
 
-
+  
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) 
   {
     HandleInferShapeError(num_forward_inputs_, g.indexed_graph(),
                           g.GetAttr<nnvm::ShapeVector>("shape"));
   }
   // 参数类型
+  // 8
   arg_dtypes.resize(idx.input_nodes().size(), -1);
+
   // 推测中间数据类型
 
-
   g = InferType(std::move(g), std::move(arg_dtypes), "__dtype__");
-
-
-
-  if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
+  
+  if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) 
+  {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
                          g.GetAttr<nnvm::DTypeVector>("dtype"));
   }
 
   g.attrs["storage_type"] = std::make_shared<dmlc::any>(std::move(arg_stypes));
- 
+  
  
   //  推测存储类型
   g = InferStorageType(std::move(g), StorageTypeVector(), "");
+
   if (g.GetAttr<size_t>("storage_type_num_unknown_nodes") != 0U) {
     HandleInferStorageTypeError(num_forward_inputs_, g.indexed_graph(),
                                 g.GetAttr<StorageTypeVector>("storage_type"));
   }
+  //  至此我们都知道了。
+  //  所有的正向，反向，以及数据，输入输出节点的类型，形状，存储类型都的出来了。
 
   // Initialize the rest attributes of the graph.
   // This function can be called by regular bind
   // operation flow as well.
-
+  
   FinishInitGraph(symbol, g, shared_exec, feed_dict);
 
 
@@ -1122,10 +1144,14 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
  {
   LOG(INFO)<<"进入  GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,"; 
   const auto& idx = g.indexed_graph();
+  //  图的属性这样来获取哈。
   const auto& vstorage_type = g.GetAttr<StorageTypeVector>("storage_type");
 
-  // data entries for output gradients
+  //   data entries for output gradients
   //   得到每一个输出梯度的
+  //   1  8  表示一个损失的输出，以及7个梯度输出。
+  //   本质上，绑定数据实体和对应的存储的数组。
+  //   对应需要计算的7个梯度的值
   LOG(INFO)<<"  num_forward_outputs_   "<<num_forward_outputs_<<" idx.outputs().size() "<<idx.outputs().size();
   for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
   {
@@ -1135,34 +1161,39 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
      //  second  是数组，first   是  对应的类型
      // std::vector<DLTensor> tvm::runtime::GraphRuntime::data_entry_
      // 是是属于tensorflow向量
-     //
+     //idx.outputs()[j]  第j个输出的实体;
+     // 这个ID的实体对应于梯度的存储。
      data_entry_[idx.entry_id(idx.outputs()[j])] = grad_store_[j - num_forward_outputs_].second;
      // 相当于将对于梯度的实体和对应的存储结构对应起来了。
+     LOG(INFO)<<" idx.entry_id(idx.outputs()[j])===="<<idx.entry_id(idx.outputs()[j]);
      LOG(INFO)<<"   data_entry_  "<< data_entry_.size();
   }
 
   {
     // memory allocator
+
     LOG(INFO)<<"  idx.num_node_entries()   "<<idx.num_node_entries();
     nnvm::StorageVector arg_storage_id(idx.num_node_entries(), kBadStorageID);
     for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
     {
-      // 表示其存储来自外部，而不是动态分配
-      arg_storage_id[idx.entry_id(idx.outputs()[j])] = kExternalStorageID;
+       // 表示每一个梯度表示其存储来自外部，而不是动态分配
+       arg_storage_id[idx.entry_id(idx.outputs()[j])] = kExternalStorageID;
     }
     int  feednum=0;
     for (const auto& kv : feed_dict)
     {
-      uint32_t eid = idx.entry_id(kv.first);
+       uint32_t eid = idx.entry_id(kv.first);
        LOG(INFO)<<" eid =="<<eid;
-      data_entry_[eid] = kv.second;
+       data_entry_[eid] = kv.second;
       //
       //LOG(INFO)<<" arg_storage_id 的大小"<<arg_storage_id.size();
+      // 这些来自于外部的存储。
       arg_storage_id[eid] = kExternalStorageID;
       feednum++;
     }
     LOG(INFO)<<" feed_dict  数目 =="<<feednum;
     LOG(INFO)<<" idx.num_node_entries()  "<<idx.num_node_entries();
+    //  不属于默认存储都被认为是动态存储。
     for (size_t i = 0; i < idx.num_node_entries(); i++) 
     {
        if (vstorage_type[i] != kDefaultStorage)
@@ -1170,25 +1201,27 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     }
     //  设定了存储的类型
     g.attrs["storage"] = std::make_shared<dmlc::any>(std::move(arg_storage_id));
+    
     //    调用内存规划，内存规划我们知道是采用了引用计数
     //    原地计算， 引用计数的方法。
     //    需要找不不同的关键路径，这些路径可以子啊执行的时候并行执行。
-    //    
+
+   
     LOG(INFO)<<" g = nnvm::ApplyPass(g, planmemory)";
     g = nnvm::ApplyPass(g, "PlanMemory");
   }
-  LOG(INFO)<<" g = DetectInplaceAddTo(g);";
+   LOG(INFO)<<" g = DetectInplaceAddTo(g);";
    g = DetectInplaceAddTo(g);
 
   // log the static memory plan of the graph
   static bool mem_log_verbose = dmlc::GetEnv("MXNET_MEM_PLAN_VERBOSE_LOGGING", false);
-  if (mem_log_verbose) 
-  {
+
+   /* if (mem_log_verbose) 
+   {
     common::LogMemoryPlan(g);
-  }
-
+   } */
+  common::LogMemoryPlan(g);
   LOG(INFO)<< "  g = AttachOpExecs(g);";
-
   g = AttachOpExecs(g);
 
 
@@ -1328,7 +1361,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   }
 
   g = InferStorageType(std::move(g), std::move(arg_stypes), "__storage_type__");
-  
+
   if (g.GetAttr<size_t>("storage_type_num_unknown_nodes") != 0U) 
   {
     HandleInferStorageTypeError(num_forward_inputs_, g.indexed_graph(),
@@ -1362,6 +1395,7 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
   // Initialize the rest attributes of the graph.
   // This function can be called by regular bind
   // operation flow as well.
+  LOG(INFO)<<"进入FinishInitGraph(symbol, g, shared_exec, feed_dict);";
   FinishInitGraph(symbol, g, shared_exec, feed_dict);
 }
 
@@ -1508,11 +1542,11 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
   //   获取到g 的索引图
   //   获取索引图
   const auto& idx = g.indexed_graph();
-  // get number of nodes used in forward pass
+  //  get number of nodes used in forward pass
+  //  
   num_forward_nodes_ = 0;
-
+  //   1   
   LOG(INFO)<<"num_forward_outputs_"<<num_forward_outputs_;
-
   for (size_t i = 0; i < num_forward_outputs_; ++i) 
   {
     // 对于所有的输出节点
@@ -1520,6 +1554,7 @@ Graph GraphExecutor::InitGraph(nnvm::Symbol symbol,
     num_forward_nodes_ = std::max(
                     num_forward_nodes_, static_cast<size_t>(idx.outputs()[i].node_id + 1));
   }
+   //  14  结果为，包括参数和中间的节点。
   LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
   return g;
 }
