@@ -165,12 +165,72 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
   auto &storage_inplace_index = *storage_inplace_index_ptr;
   for(int i=0;i<storage.size();i++)
   {
-      LOG(INFO)<<"storage存储节点向量  "<< i<<"对应的引用计数为：："<<storage[i];
+      LOG(INFO)<<"storage存储节点向量  "<< i<<"对应的存储类型为：："<<storage[i];
   }
+  //  这里面可以发现，存储的类型为 -1  和 -2
+  /*  [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  0对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  1对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  2对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  3对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  4对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  5对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  6对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  7对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  8对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  9对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  10对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  11对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  12对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  13对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  14对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  15对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  16对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  17对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  18对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  19对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  20对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  21对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  22对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  23对应的引用计数为：：-1
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  24对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  25对应的引用计数为：：-2
+      [04:56:39] src/pass/plan_memory.cc:168: storage存储节点向量  26对应的引用计数为：：-2 */
+
   for(int i=0;i<storage_inplace_index.size();i++)
   {
-      LOG(INFO)<<"storage_inplace_index存储节点向量  "<< i<<"对应的引用计数为：："<<storage_inplace_index[i];
+      LOG(INFO)<<"storage_inplace_index存储节点向量  "<< i<<"是不是具有原地：："<<storage_inplace_index[i];
   }
+  //  都为-1   都不是原地操作。
+    /*  
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  0对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  1对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  2对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  3对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  4对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  5对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  6对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  7对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  8对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  9对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  10对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  11对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  12对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  13对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  14对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  15对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  16对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  17对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  18对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  19对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  20对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  21对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  22对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  23对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  24对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  25对应的引用计数为：：-1
+    [04:56:39] src/pass/plan_memory.cc:172: storage_inplace_index存储节点向量  26对应的引用计数为：：-1 */
+
+
 
   // Get attributes from the graph
   const ShapeVector& shape_vec = ret.GetAttr<ShapeVector>("shape");
@@ -180,37 +240,60 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
   {
       LOG(INFO)<<"DTypeVector   "<< i<<"存储类型：："<<dtype_vec[i];
   }
-
+  // 为什么都是0？？？？？？
+    /* 
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   0存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   1存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   2存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   3存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   4存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   5存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   6存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   7存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   8存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   9存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   10存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   11存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   12存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   13存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   14存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   15存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   16存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   17存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   18存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   19存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   20存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   21存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   22存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   23存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   24存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   25存储类型：：0
+    [04:56:39] src/pass/plan_memory.cc:181: DTypeVector   26存储类型：：0 */
    // 如果设备已经分配好了
   if (ret.attrs.count("device") != 0)
   {
      device_vec = &(ret.GetAttr<DeviceVector>("device"));
+    
     /*  for(int i=0;i<device_vec->size();i++)
      {
       LOG(INFO)<<"device_vecr   "<< i<<"   设备为：： "<<device_vec[i];
      } */
-
-
   }
 
 
   size_t num_not_allocated = 0;
+  //  27
   LOG(INFO)<<" idx.num_node_entries()  "<<idx.num_node_entries();
   // 这里面应该是27   
-  std::vector<GraphAllocator::StorageID> storage_ref_count(idx.num_node_entries(), 0);
-
-
-
-
-
-     
+  std::vector<GraphAllocator::StorageID> storage_ref_count(idx.num_node_entries(), 0); 
+  // 0--20 因为节点只有20个
   LOG(INFO)<<" node_range.first  "<<node_range.first<<" node_range.second "<<node_range.second;
 
    //  这里里面 0-20
    //  遍历每一个节点
   for (uint32_t nid = node_range.first; nid < node_range.second; ++nid)
   {
-     
+    
     LOG(INFO)<<" **********************************************************************************";
     LOG(INFO)<<"nid======="<<nid;
     const auto& inode = idx[nid];
@@ -219,13 +302,12 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
     if (inode.source->is_variable()) continue;
     // check inplace option
     // 检查是不是可以进行原地操作。
-    // 原地操作的条件是？？？？？？
-    
+    // 原地操作的条件是？？？？？？ 
+
     if (finplace_option.count(inode.source->op()) != 0) 
     {
-      //  
+      //  这里面不会执行 
       auto inplace_pairs = finplace_option[inode.source->op()](inode.source->attrs);
-
       std::vector<bool> identity;
 
       if (finplace_identity.count(inode.source->op()) != 0) 
@@ -276,8 +358,9 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
     // sort output nodes based on size before allocating output
     // 对于输出节点按照大小进行排序
     std::multimap<size_t, uint32_t> eids;
-    // 最终得到了每一个输入实体和对应的维度的信息
-    //  为这个节点的每一个输出分配内存
+    //   最终得到了每一个输入实体和对应的维度的信息
+    //   为这个节点的每一个输出分配内存
+    //  
     for (uint32_t index = 0; index < inode.source->num_outputs(); ++index) 
     {
       //
@@ -297,7 +380,8 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
       }
     }
 
-    //  这里面遍历刚才得到的每一个输入的维度。
+    //    这里面遍历刚才得到的每一个输入的维度。
+    //    eids上面得到了。  
     for (auto rit = eids.rbegin(); rit != eids.rend(); ++rit)
     {
         
@@ -312,6 +396,7 @@ size_t AllocMemory(const Graph& ret, const IndexedGraph& idx,
         }
         //  实体ID和存储ID之间的对应关系在此
         storage[eid] = sid;
+
     }
     // check if certain inputs is ignored.
     std::vector<uint32_t> ignore_inputs;
@@ -389,12 +474,12 @@ Graph PlanMemory(Graph ret)
 
   // 进入内存规划函数。
   LOG(INFO)<<"PlanMemory(Graph ret)";
-  // setup ref counter
-
+  //  setup ref counter
+  
   const IndexedGraph& idx = ret.indexed_graph();
-  // 获取可以忽略的节点
+  //  获取可以忽略的节点
   static auto& fignore_inputs = Op::GetAttr<FIgnoreInputs>("FIgnoreInputs");
-
+  //   20
   LOG(INFO)<<"idx.num_nodes()   "<<idx.num_nodes();
   std::pair<uint32_t, uint32_t> node_range = {0, idx.num_nodes()};
   // 如果指定了节点的范围
@@ -409,18 +494,29 @@ Graph PlanMemory(Graph ret)
   // step 1: initialize reference count
   int  a=ret.attrs.count("ref_count");
   LOG(INFO)<<"ret.attrs.count(ref_count   "<<a;
+  //  0  表示之前没有任何的设置引用计数
   if (ret.attrs.count("ref_count") != 0) 
-  {
+  { 
     ref_count = ret.MoveCopyAttr<std::vector<uint32_t> >("ref_count");
   } 
  else
  {  
+    //   进入这里面。
+    //   27  
+    //   这里面可以看出
+    //   节点的编号和实体的编号没有任何关系
+    //   节点只是计算节点
+    //   实体代表的是数据实体
+    //   也就是说 目前的 mxnet 计算都是十分粗粒度的。
+    //   27
     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
 
-    ref_count.resize(idx.num_node_entries(), 0);
-
+    ref_count.resize(idx.num_node_entries(), 0);  
+    //   这里面遍历每一个计算的节点
     for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
     {
+     
+     
       // 结果为Node
       // std::vector<Node> nodes_;
       //  inline const Node& operator[](uint32_t node_id) const {
@@ -476,22 +572,16 @@ Graph PlanMemory(Graph ret)
                     static NodePtr Create();
                   }; 
           */
-              
-
-
-     
-
-      LOG(INFO)<<"   对于节点nid    "<<nid; 
-      const auto& inode = idx[nid];   // 真实节点的ID   1,3,2,4,5，等
+      LOG(INFO)<<"  nid="<<nid; 
+      const auto& inode = idx[nid];     // 真实节点的ID   1,3,2,4,5，等
       const std::string& arg_name = inode.source->attrs.name;
-      LOG(INFO)<<"这个节点的名字为"<<arg_name;
+      LOG(INFO)<<"名字="<<arg_name;
       int a=inode.source->is_variable();
-      LOG(INFO)<<"节点不不是一个变量  "<<a;
+      LOG(INFO)<<"变量是"<<a;
       if (inode.source->is_variable()) continue;
       //  对于这个节点的每一个输入。
       //  其对应的引用加以
       LOG(INFO)<<"   inode.inputs.size()   "<<inode.inputs.size();
-      
       for (const auto& e : inode.inputs)
       {
 
@@ -500,7 +590,6 @@ Graph PlanMemory(Graph ret)
         LOG(INFO)<<" 对于输入   idx.entry_id(e) ======="<<idx.entry_id(e)<< "   对应的输入的节点的引用计数  "<<ref_count[idx.entry_id(e)] ;
         // 得到这个实体真实的ID
       }
-
       /* for (const auto& e : inode.outputs)
       {
 
@@ -510,8 +599,6 @@ Graph PlanMemory(Graph ret)
         // 得到这个实体真实的ID
       }
       */
-
-
       // no dataflow dependency is needed for those are ignored.
       // revoke the dependency counter.
       int  a7=0;
@@ -527,10 +614,10 @@ Graph PlanMemory(Graph ret)
          }
        }
       LOG(INFO)<<" fignore_inputs.count   这个节点对应的可以被忽略的输入的节点 " <<a7;
-     LOG(INFO)<<"***********************************************************************************";
+      LOG(INFO)<<"***********************************************************************************";
      }
      //    最后对于图里面的每一输出
-     //  
+     //    自带的引用计数
      int  output_num=0; 
      for (const auto& e : idx.outputs())
      {
@@ -538,8 +625,17 @@ Graph PlanMemory(Graph ret)
        ++ref_count[idx.entry_id(e)];
        LOG(INFO)<<"对于每一个最后的输出结果   "<<idx.entry_id(e)<<"   对应的引用计数为  "<<ref_count[idx.entry_id(e)];
 
-    }
-
+     }
+      /*      [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   13   对应的引用计数为  2
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   24   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   25   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   26   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   21   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   22   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   17   对应的引用计数为  1
+              [04:56:39] src/pass/plan_memory.cc:539: 对于每一个最后的输出结果   18   对应的引用计数为  1 
+      */
+    //  8
     LOG(INFO)<<"索引图的输出结果个数为"<<output_num;
   }
 
@@ -548,22 +644,45 @@ Graph PlanMemory(Graph ret)
   {
       LOG(INFO)<<"第 个节点  "<< i<<"对应的引用计数为：："<<ref_count[i];
   }
-
+  /* 
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  0对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  1对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  2对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  3对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  4对应的引用计数为：：3
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  5对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  6对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  7对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  8对应的引用计数为：：3
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  9对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  10对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  11对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  12对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  13对应的引用计数为：：2
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  14对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  15对应的引用计数为：：0
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  16对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  17对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  18对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  19对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  20对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  21对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  22对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  23对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  24对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  25对应的引用计数为：：1
+    [04:56:39] src/pass/plan_memory.cc:549: 第 个节点  26对应的引用计数为：：1 
+  */
 
   // step 2: allocate memory.
-
-
-
-
-
   StorageVector storage;
   if (ret.attrs.count("storage") != 0) 
-  {
+  {  
     storage = ret.MoveCopyAttr<StorageVector>("storage");
   } 
   else 
   {
-
+     // 27
      LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
      storage.resize(idx.num_node_entries(), -1);
   }
@@ -572,41 +691,37 @@ Graph PlanMemory(Graph ret)
   // 是不是按照范围进行匹配？？？？
   size_t min_allocated_bytes = -1;
   size_t max_match_range = dmlc::GetEnv("NNVM_EXEC_MATCH_RANGE", 16);
-  size_t min_match_range =
-         dmlc::GetEnv("NNVM_AUTO_SEARCH_MATCH_RANGE", false) ? 1 : max_match_range;
-
-  
-
+  size_t min_match_range = dmlc::GetEnv("NNVM_AUTO_SEARCH_MATCH_RANGE", false) ? 1 : max_match_range;
+  //  最大是16  最小是1
   //  也就是说子啊不断的变换着分配的范围，哪一种分配需要的内存最少，就按照哪一种进行分配。
-
+  //  按照指数的范围进行内存划分
 
   for (size_t match_range = min_match_range; match_range <= max_match_range; match_range *= 2) 
   {
     // Make a copy of related fields
+    // 16
+    // 从最小的范围到最大的范围，每次增加一倍。
     LOG(INFO)<<"match_range"<<match_range;
     StorageVector storage_vec(storage);
     LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
-
     std::vector<int> storage_inplace_index(idx.num_node_entries(), -1);
-
     // the allocator
-    // 按照分配。。。。。。
+    // 按照分配这个范围要求去分配。。。。。。
+    // 构造一个分配器
     GraphAllocator allocator(&idx, match_range);
-
     // number of entries that are not statically allocated.
-    // 
-    
-    size_t storage_num_not_allocated =
-        AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
-
-    LOG(INFO)<<"storage_num_not_allocated"<<storage_num_not_allocated;
-    
+    // 存储类型，哪一些节点是原地操作？引用计数向量。分配器
+    // 无法分配的节点
+    size_t storage_num_not_allocated=AllocMemory(ret, idx, node_range, &storage_vec, &storage_inplace_index,ref_count, &allocator);
+    // 0
+    LOG(INFO)<<"storage_num_not_allocated 没有静态分配的节点"<<storage_num_not_allocated;
     size_t storage_allocated_bytes = allocator.TotalAllocBytes();
-
+    //总的分配的内存的大小。
+    // 1364
     LOG(INFO)<<"storage_allocated_bytes"<<storage_allocated_bytes;
     
     // Choose the plan which leads to minimal memory usage
-    //
+    // 遍历不同的分配范围，选择分配内存需求最少的方案。
     if (min_allocated_bytes > storage_allocated_bytes) 
     {
       ret.attrs["storage_id"] = std::make_shared<any>(std::move(storage_vec));

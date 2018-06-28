@@ -1220,11 +1220,15 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
    {
     common::LogMemoryPlan(g);
    } */
+
   common::LogMemoryPlan(g);
+
+
+  
   LOG(INFO)<< "  g = AttachOpExecs(g);";
   g = AttachOpExecs(g);
 
-
+  
   LOG(INFO)<<"   AttachOpResources(g);";
   AttachOpResources(g);
 
@@ -1685,11 +1689,11 @@ void GraphExecutor::InitDataEntryMemory(std::vector<NDArray>* shared_pool)
   std::vector<size_t> sorted_pool_index;
   for (size_t i = 0; i < pool_info.size(); i++)
   {
-    sorted_pool_index.push_back(i);
+      sorted_pool_index.push_back(i);
   }
   auto pool_comparator = [&pool_info](int lhs, int rhs)
   {
-    return pool_info[lhs].bytes > pool_info[rhs].bytes;
+      return pool_info[lhs].bytes > pool_info[rhs].bytes;
   };
   //  按照标准的对比器件。
   std::sort(sorted_pool_index.begin(), sorted_pool_index.end(), pool_comparator);
@@ -1760,6 +1764,7 @@ void GraphExecutor::InitCachedOps()
   const auto& vctx = graph_.GetAttr<ContextVector>("context");
   const auto& addto_entry = graph_.GetAttr<std::vector<int> >("addto_entry");
   const auto& skip_plus_node = graph_.GetAttr<std::vector<int> >("skip_plus_node");
+  
   LOG(INFO)<<"idx.num_nodes()===="<<idx.num_nodes();
   op_nodes_.resize(idx.num_nodes());
 
@@ -1777,8 +1782,7 @@ void GraphExecutor::InitCachedOps()
     LOG(INFO)<<"skip_plus_node.at(nid)   "<<sk;
     if (skip_plus_node.at(nid))
     {
-    
-      op_nodes_[nid].skip_exec_node = true; continue;
+       op_nodes_[nid].skip_exec_node = true; continue;
     }
     op_nodes_[nid].exec = op_execs[nid];
     op_nodes_[nid].ctx = vctx[nid];
@@ -1799,18 +1803,18 @@ void GraphExecutor::InitCachedOps()
     for (uint32_t index = 0; index < inode.source->num_outputs(); ++index)
     {  
       uint32_t eid = idx.entry_id(nid, index);
-      LOG(INFO)<<"遍历eid=====   "<<eid;
+      LOG(INFO)<<" 遍历eid=====   "<<eid;
       exec->out_array.push_back(data_entry_[eid]);
       if (addto_entry.at(eid) != 0) 
       {
         exec->req.push_back(kAddTo);
-        LOG(INFO)<<"kAddTo   ";
+        LOG(INFO)<<" kAddTo   ";
       } 
       else if 
       (vstorage_inplace[eid] >= 0) 
       {
         exec->req.push_back(kWriteInplace);
-        LOG(INFO)<<"kWriteInplace   ";
+        LOG(INFO)<<"  kWriteInplace   ";
       } 
       else if 
       (vstorage_inplace[eid] == -2)
@@ -1827,9 +1831,11 @@ void GraphExecutor::InitCachedOps()
     }
   }
   // Note that this modifies the requirment of kWriteInplace
+  // 8  8 
   LOG(INFO)<<"num_forward_outputs_===="<<num_forward_outputs_;
   LOG(INFO)<<"idx.outputs().size()===="<<idx.outputs().size();
   // 找到对应的梯度的存储
+  //  1    8
   for (size_t j = num_forward_outputs_; j < idx.outputs().size(); ++j) 
   {
     auto& e = idx.outputs()[j];
@@ -1896,7 +1902,7 @@ void GraphExecutor::InitCachedOps()
       0,
       "SetupExec");
     auto exec_fun = [exec, is_async, is_gpu] (
-        RunContext ctx, Engine::CallbackOnComplete on_complete) 
+      RunContext ctx, Engine::CallbackOnComplete on_complete) 
       {
       if (is_async) 
       {
@@ -1909,22 +1915,23 @@ void GraphExecutor::InitCachedOps()
       {
         if (is_gpu)
          {
-        #if MXNET_USE_CUDA
+           #if MXNET_USE_CUDA
           // Wait GPU kernel to finish.
           ctx.get_stream<gpu>()->Wait();
 
-        #else
+          #else
           LOG(FATAL) << MXNET_GPU_NOT_ENABLED_ERROR;
-        #endif
+          #endif
         }
         on_complete();
 
       }
     };
-     // setup the vars
+     //  setup the vars
      //  每一个节点cache 的OPT
-     // 为节点构造完成的实例化的OP
+     //  为节点构造完成的实例化的OP
      //  为什么叫做cache-op呢？
+     //  明白了，按照执行器构造一个operator
     op_nodes_[nid].cached_opr = Engine::Get()->NewOperator(
         exec_fun, use_vars, mutate_vars, FnProperty::kNormal,
         op_nodes_[nid].opr_name);
@@ -1937,8 +1944,8 @@ void GraphExecutor::InitCachedOps()
 
 void GraphExecutor::InitOpSegs()
  {
-   LOG(INFO)<<"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
-   LOG(INFO)<<"进入到InitOpSegs()内部";
+  LOG(INFO)<<"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
+  LOG(INFO)<<"进入到InitOpSegs()内部";
   size_t total_num_nodes = graph_.indexed_graph().num_nodes();
 
   //std::vector<CachedSegOpr> mxnet::exec::GraphExecutor::cached_seg_opr_
@@ -1963,6 +1970,7 @@ void GraphExecutor::InitOpSegs()
   CachedSegOpr p;
   //  初始化为全部的节点的数目的
   //  默认和节点的数目保持一致。
+
   LOG(INFO)<<"总的节点数目为="<<total_num_nodes;
   cached_seg_opr_.resize(total_num_nodes, p);
 
@@ -2001,14 +2009,19 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
    LOG(INFO)<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
    LOG(INFO)<<"进入BulkTrainingOpSegs";
   // The maximum number of node in a segment executed in bulk
-
- 
   size_t num_nodes_threshold = dmlc::GetEnv("MXNET_EXEC_BULK_EXEC_MAX_NODE_TRAIN", 15);
+  //  15
   LOG(INFO)<<"num_nodes_threshold    "<<num_nodes_threshold;
   // create forward segments for training
   size_t topo_start = 0;
+  //  14
   LOG(INFO)<<"num_forward_nodes_"<<num_forward_nodes_;
   //  进行正向的过程。
+  //  我们可以看出
+  //  0-0  1-1   2-2   3-5   6-6  7-9
+  //  变量单独一个段
+  //  以及连续的非变量加上第一个变量构成段
+
   for (size_t nid = 0; nid < num_forward_nodes_; nid++)
   {
     // 按照拓扑排序好的性顺序来获取节点
@@ -2025,7 +2038,6 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
     if (node->is_variable() || nid - topo_start > num_nodes_threshold ||
     op_node.exec->exec_type() != ExecType::kSync) 
     {
-
       // create a new segment for the previous nodes if the current one cannot be bulked
       // num_nodes_threshold  每隔这么多次进行一次成段构造。
       LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
@@ -2033,7 +2045,8 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
       topo_start = nid + 1;
     }
   }
-  // the last segment
+  //  the last segment
+  //  负责构造最后一个段
   if (topo_start != num_forward_nodes_) 
   {
     LOG(INFO)<<"topo_start  "<<topo_start<<"   num_forward_nodes_   "<<num_forward_nodes_;
@@ -2051,9 +2064,11 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
   {
     grad_vars.insert(kv.second.var());
   }
+  //   等于  7   
   LOG(INFO)<<"grad_vars.size()  "<<grad_vars.size();
   auto &idx = graph_.indexed_graph();
   topo_start = num_forward_nodes_;
+  //    20
   LOG(INFO)<<"total_num_nodes"<<total_num_nodes;
   //  进行反向的过程。
 
@@ -2071,8 +2086,6 @@ void GraphExecutor::BulkTrainingOpSegs(size_t total_num_nodes)
         op_node.exec->exec_type() != ExecType::kSync)
     {
       //std::vector<CachedSegOpr> mxnet::exec::GraphExecutor::cached_seg_opr_
-      //  
-
       LOG(INFO)<<"topo_start  "<<topo_start<<"   nid   "<<nid;
       cached_seg_opr_[topo_start] = this->CreateCachedSegOpr(topo_start, nid);
       topo_start = nid + 1;

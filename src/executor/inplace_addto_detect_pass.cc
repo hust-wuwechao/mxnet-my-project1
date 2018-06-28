@@ -31,17 +31,22 @@
 
 namespace mxnet {
 namespace exec {
-
+//  检测原地的加到
 Graph DetectInplaceAddTo(Graph g) 
 {
 
+  LOG(INFO)<<"DetectInplaceAddTo";
   nnvm::StorageVector storage_id =
       g.MoveCopyAttr<nnvm::StorageVector>("storage_id");
+
   std::vector<int> storage_inplace_index =
       g.MoveCopyAttr<std::vector<int> >("storage_inplace_index");
+   
   static const Op* ewise_plus_op = Op::Get("_grad_add");
+
   auto& idx = g.indexed_graph();
   // reference cont.
+  LOG(INFO)<<"idx.num_node_entries()"<<idx.num_node_entries();
   std::vector<int> ref_count(idx.num_node_entries(), 0);
   std::vector<int> addto_entry(idx.num_node_entries(), 0);
   std::vector<int> skip_plus_node(idx.num_nodes(), 0);
@@ -52,39 +57,43 @@ Graph DetectInplaceAddTo(Graph g)
   }
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid) 
   {
-    for (auto &e : idx[nid].inputs) {
+    //  对于每一个节点，如果他所有的输入的引用加1
+    for (auto &e : idx[nid].inputs)
+    {
       ++ref_count[idx.entry_id(e)];
     }
   }
-
   for (uint32_t nid = 0; nid < idx.num_nodes(); ++nid)
-   {
+  {
     const auto& inode = idx[nid];
-
-    if (inode.source->op() != ewise_plus_op) continue;
+    if (inode.source->op() != ewise_plus_op)    continue; 
+    //  inode.source->op() != ewise_plus_op=等于
     int sid = storage_id[idx.entry_id(inode.inputs[0])];
-    if (sid != storage_id[idx.entry_id(nid, 0)]) continue;
+    //  如果2者的存储的不一样。跳过
+    if (sid != storage_id[idx.entry_id(nid, 0)])  continue;
+    //  第一个输入时变量，跳过。
     if (idx[inode.inputs[0].node_id].source->is_variable()) continue;
+    //  第二个输入是变量，跳过。
     if (idx[inode.inputs[1].node_id].source->is_variable()) continue;
-
+    //  
     uint32_t eid_rhs  = idx.entry_id(inode.inputs[1]);
-
+    //  如果只会被一个引用
     if (ref_count[eid_rhs] != 1) continue;
-    
+    //  ？？？？？
     if (inode.inputs[0].node_id >= inode.inputs[1].node_id) continue;
 
     // TODO(haibin) support inplace addto for Dynamic Storage
-
+    //  动态存储。
     if (storage_id[eid_rhs] == kDynamicStorageID) continue;
-
+    // 0和1 在一个存储
     CHECK_NE(storage_id[eid_rhs], sid);
-
+    
     storage_id[eid_rhs] = sid;
-
+    
     addto_entry[eid_rhs] = 1;
-
+    // 
     storage_inplace_index[eid_rhs] = -1;
-
+    //  这个节点skip_plus_node
     skip_plus_node[nid] = 1;
   }
 

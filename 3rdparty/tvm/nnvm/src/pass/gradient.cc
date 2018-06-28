@@ -15,7 +15,8 @@ namespace {
 
 // default aggregate gradient function
 // require operator zeros and elemwise_sum to be presented.
-NodeEntry DefaultAggregateGradient(std::vector<NodeEntry>&& v) {
+NodeEntry DefaultAggregateGradient(std::vector<NodeEntry>&& v) 
+{
   if (v.size() == 1) {
     return std::move(v[0]);
   } else if (v.size() == 0) {
@@ -53,11 +54,11 @@ bool CheckGradAllZero(const std::vector<NodeEntry>& grads,
 
 // helper entry
 struct GradEntry {
-#ifdef _MSC_VER
+  #ifdef _MSC_VER
   NodeEntry sum = NodeEntry{nullptr, 0, 0};
-#else
-  NodeEntry sum{nullptr, 0, 0};
-#endif
+  #else
+    NodeEntry sum{nullptr, 0, 0};
+  #endif
   std::vector<NodeEntry> grads;
   bool need_attr_hint{true};
 };
@@ -81,34 +82,38 @@ Graph Gradient(Graph src)
 
   const std::vector<NodeEntry>& ys =
       src.GetAttr<std::vector<NodeEntry> >("grad_ys");
-
+  
   const std::vector<NodeEntry>& ys_out_grad =
       src.GetAttr<std::vector<NodeEntry> >("grad_ys_out_grad");
-
+  
   const std::vector<NodeEntry>& xs =
       src.GetAttr<std::vector<NodeEntry> >("grad_xs");
 
   using AggFun = std::function<NodeEntry (std::vector<NodeEntry>&& inputs)>;
   AggFun agg_fun = DefaultAggregateGradient;
-
+  //  使用自定义的梯度的聚集函数
   if (src.attrs.count("grad_aggregate_fun") != 0) 
   {
        agg_fun = src.GetAttr<AggFun>("grad_aggregate_fun");
   }
   MirrorFun mirror_fun = nullptr;
-
+  //  ??????????????????
   if (src.attrs.count("grad_mirror_fun") != 0)
-   {
+  {
     mirror_fun = src.GetAttr<MirrorFun>("grad_mirror_fun");
   }
+  //  ?????????????????
   AttrHintFun attr_hint_fun = nullptr;
   if (src.attrs.count("attr_hint_fun") != 0) {
     attr_hint_fun = src.GetAttr<AttrHintFun>("attr_hint_fun");
   }
+  //  ??????????????????
   std::vector<const Op*> zero_ops;
-  if (src.attrs.count("zero_ops") != 0) {
+  if (src.attrs.count("zero_ops") != 0) 
+  {
     zero_ops = src.GetAttr<std::vector<const Op*> >("zero_ops");
   }
+
   const Op* copy_op = (src.attrs.count("copy_op") != 0) ?
       Op::Get(src.GetAttr<std::string>("copy_op")) :
       nullptr;
@@ -118,29 +123,46 @@ Graph Gradient(Graph src)
   
   std::unordered_map<Node*, std::vector<GradEntry> > output_grads;
 
-  // 这里面又是采用深度优先遍历的方式。
+  //  这里面又是采用深度优先遍历的方式。
+  //  从ys  也就是损失结果反向深度遍历
   DFSVisit(ys, [&](const NodePtr& node) 
   {
+      //  匿名的遍历函数，如果这个节点属于梯度的输出的节点
       if (output_grads.count(node.get()) == 0) 
       {
+        // 重新修改这个节点的结果梯度的大小
         output_grads[node.get()].resize(node->num_outputs());
       }
+      // 将结果加入到排序里面
       topo_order.push_back(node);
     });
-
-  CHECK_EQ(ys.size(), ys_out_grad.size());
-  LOG(INFO)<<"在pass  梯里面ys.size()"<<ys.size();
-  LOG(INFO)<<"在pass  梯里面ys_out_grad.size()"<<ys_out_grad.size();
+//  最终得到逆向拓扑排序的结果。topo_order里面。
+//  并且得到的，我们在这里面输出一下试一下哈。
+for(int i=0;i<topo_order.size();i++)
+{
+   // using NodePtr = std::shared_ptr<Node>;
+   auto nodeptr=topo_order[i];
+   LOG(INFO)<<"q求梯度时候反向遍历结果"<<nodeptr->attrs.name;
+}
   
+  CHECK_EQ(ys.size(), ys_out_grad.size());
+  //   1
+  LOG(INFO)<<"在pass  梯里面ys.size()"<<ys.size();
+  //   1
+  LOG(INFO)<<"在pass  梯里面ys_out_grad.size()"<<ys_out_grad.size();
+  //   1
+  //   1
   for (size_t i = 0; i < ys.size(); ++i) 
   {
+
     NodeEntry ograd = ys_out_grad[i];
     output_grads[ys[i].node.get()][ys[i].index].grads = { ograd };
   }
 
-  // Check that all xs are reachable from ys
+  //  Check that all xs are reachable from ys
+  //  7
   LOG(INFO)<<"在pass  梯里面xs.size()"<<xs.size();
-
+  // 
   for (size_t i = 0; i < xs.size(); ++i)
   {
     CHECK(output_grads.find(xs[i].node.get()) != output_grads.end())
@@ -192,19 +214,22 @@ Graph Gradient(Graph src)
     {
       GradEntry& e = out_grad_vec[i];
       e.sum = agg_fun(std::move(e.grads));
-      if (e.need_attr_hint && attr_hint_fun != nullptr) {
+      if (e.need_attr_hint && attr_hint_fun != nullptr)
+       {
         e.sum = attr_hint_fun(e.sum, NodeEntry{ptr, 0, i});
       }
       out_agg_grads.push_back(e.sum);
     }
-    if ((*rit)->inputs.size() != 0) {
+    if ((*rit)->inputs.size() != 0) 
+    {
       NodePtr fwd_node = (mirror_map.size() == 0 ? ptr : mirror_map.at(ptr.get()));
       std::vector<NodeEntry> input_grads;
       if (grad_fun_map.count(ptr->op())) {
         input_grads = grad_fun_map[ptr->op()](fwd_node, out_agg_grads);
         CHECK_EQ((*rit)->inputs.size(), input_grads.size())
             << "Gradient function not returning enough gradient";
-      } else if (CheckGradAllZero(out_agg_grads, zero_ops)) {
+      } 
+      else if (CheckGradAllZero(out_agg_grads, zero_ops)) {
         for (size_t i = 0; i < fwd_node->num_inputs(); ++i) {
           std::ostringstream os;
           if (1 == fwd_node->num_inputs()) {
@@ -222,7 +247,9 @@ Graph Gradient(Graph src)
           }
           input_grads.emplace_back(nnvm::NodeEntry{p, 0, 0});
         }
-      } else {
+      } 
+      else 
+      {
         LOG(FATAL) << "Operator " << fwd_node->op()->name << " is non-differentiable "
                    << "because it didn't register FGradient attribute.";
       }
@@ -252,11 +279,14 @@ Graph Gradient(Graph src)
         entry.sum = attr_hint_fun(entry.sum, e);
       }
     }
-    if (copy_op != nullptr) {
+    if (copy_op != nullptr) 
+    {
       auto kv = unique_grads.find(entry.sum);
       if (kv == unique_grads.end()) {
         unique_grads.emplace(std::move(entry.sum), std::make_pair(1, counter));
-      } else {
+      }
+      else 
+      {
         NodePtr copy_node = Node::Create();
         std::ostringstream os;
         os << entry.sum.node->attrs.name << "_" << kv->second.first << "_copy";
@@ -269,15 +299,19 @@ Graph Gradient(Graph src)
         }
         unique_grads.emplace(NodeEntry{std::move(copy_node), 0, 0}, std::make_pair(1, counter));
       }
-    } else {
+    } 
+    else 
+    {
         ret.outputs[counter] = entry.sum;
     }
     ++counter;
   }
   //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
 
-  if (copy_op != nullptr) {
-    for (const auto& kv : unique_grads) {
+  if (copy_op != nullptr) 
+  {
+    for (const auto& kv : unique_grads) 
+    {
       ret.outputs[kv.second.second] = kv.first;
     }
   }
