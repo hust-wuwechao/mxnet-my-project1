@@ -146,7 +146,7 @@ for(int i=0;i<topo_order.size();i++)
    auto nodeptr=topo_order[i];
    LOG(INFO)<<"q求梯度时候反向遍历结果"<<nodeptr->attrs.name;
 }
-  
+  LOG(INFO)<<"topo_order.size()"<<topo_order.size();
   CHECK_EQ(ys.size(), ys_out_grad.size());
   //   1
   LOG(INFO)<<"在pass  梯里面ys.size()"<<ys.size();
