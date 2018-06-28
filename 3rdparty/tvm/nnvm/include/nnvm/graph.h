@@ -88,7 +88,8 @@ class Graph {
 class IndexedGraph {
  public:
   /*! \brief represents a data in the graph */
-  struct NodeEntry {
+  struct NodeEntry 
+  {
     /*! \brief the source node id in the computation graph */
     uint32_t node_id;
     /*! \brief index of output from the source. */

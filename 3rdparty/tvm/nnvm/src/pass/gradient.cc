@@ -146,26 +146,26 @@ for(int i=0;i<topo_order.size();i++)
    auto nodeptr=topo_order[i];
    LOG(INFO)<<"q求梯度时候反向遍历结果"<<nodeptr->attrs.name;
 }
-//  我们可以看出按照先后的14个进行了排序
-//  排序的结果是节点。
-/* 
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果X
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w0
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b0
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w1
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b1
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w2
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b2
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果label
-[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果 
-*/
- //   14
-LOG(INFO)<<"topo_order.size()"<<topo_order.size();
+      //  我们可以看出按照先后的14个进行了排序
+      //  排序的结果是节点。
+      /* 
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果X
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w0
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b0
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w1
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b1
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w2
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b2
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果label
+      [21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果 
+      */
+      //   14
+  LOG(INFO)<<"topo_order.size()"<<topo_order.size();
   CHECK_EQ(ys.size(), ys_out_grad.size());
   //   1
   LOG(INFO)<<"在pass  梯里面ys.size()"<<ys.size();
@@ -217,7 +217,7 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
   static auto& grad_fun_map = Op::GetAttr<FGradient>("FGradient");
 
   static auto& finfer_shape = Op::GetAttr<FInferShape>("FInferShape");
-  
+
 
   std::vector<NodeEntry> out_agg_grads;
   //   遍历拓扑排序
@@ -238,6 +238,7 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
     //  对于这个节点的每一个梯度值
     //  1 1 1 1 1 1 1   6 个  1
     LOG(INFO)<<" out_grad_vec.size()"<<out_grad_vec.size();
+
     for(uint32_t i = 0; i < out_grad_vec.size(); ++i) 
     {
       GradEntry& e = out_grad_vec[i];
@@ -253,10 +254,12 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
       int  b=mirror_map.size() == 0 ? 1 : 0;
       LOG(INFO)<<"b=mirror_map.size() == 0 ? 1 : 0     "<<b;
       NodePtr fwd_node = (mirror_map.size() == 0 ? ptr : mirror_map.at(ptr.get()));
-
+      //  得到这个节点的所有的输入的梯度的实体。
+      //  不一定是节点。
       std::vector<NodeEntry> input_grads;
       if (grad_fun_map.count(ptr->op())) 
       {
+        //  通过节点找到需要计算的梯度的值。
         input_grads = grad_fun_map[ptr->op()](fwd_node, out_agg_grads);
         LOG(INFO)<<"对应的input_grads大小为"<<input_grads.size();
         LOG(INFO)<<"(*rit)->inputs.size()"<<(*rit)->inputs.size();
@@ -290,10 +293,13 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
                    << "because it didn't register FGradient attribute.";
       }
       auto git = input_grads.begin();
-      for (auto it = (*rit)->inputs.begin(); it != (*rit)->inputs.end(); ++it, ++git) {
+      for (auto it = (*rit)->inputs.begin(); it != (*rit)->inputs.end(); ++it, ++git) 
+      {
+        //  一个实体属于哪一个节点，以及在节点里面的排序。
         auto& ge = output_grads[it->node.get()][it->index];
         // if any of the backward op can do shape inference, the hint is not necessary.
-        if (finfer_shape.count(git->node->op())) {
+        if (finfer_shape.count(git->node->op())) 
+        {
           ge.need_attr_hint = false;
         }
         ge.grads.emplace_back(std::move(*git));
@@ -306,12 +312,66 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
   ret.outputs.resize(xs.size());
   NodeEntryMap<std::pair<size_t, size_t> > unique_grads;
   size_t counter = 0;
+  //  对于每一个需要计算梯度的实体
+   
+      /*  /*! \brief represents a data in the graph */
+      // struct NodeEntry 
+      // {
+      /*! \brief the source node id in the computation graph */
+      // 这个实体对应的计算图里面的原节点ID
+      // uint32_t node_id;
+      // 是这个节点的输出的排位第几
+      /*! \brief index of output from the source. */
+      //  uint32_t index;
+      //  版本号。这样支持异步吗？
+      /*! \brief version of the node */
+      //  uint32_t version;
+      //}; */
+    /*! \brief an entry that represents output data from a node */
+     //struct NodeEntry {
+     /*! \brief the source node of this data */
+     //NodePtr node;
+     /*! \brief index of output from the source. */
+     //uint32_t index;
+     /*!
+      * \brief version of input Variable.
+     *  This field can only be nonzero when this->node is a Variable node.
+    *  version is increased by one each time a Variable get composed to a mutation Op.
+    *  This information can be helpful to decide order of operations when sequence of mutation happens.
+    */
+  //uint32_t version;
+//    };
+
+    
   for (const NodeEntry& e : xs)
   {
+
+    /*
+
+        struct GradEntry 
+      {
+        #ifdef _MSC_VER
+        //  保存梯度节点的和
+        NodeEntry sum = NodeEntry{nullptr, 0, 0};
+        #else
+          NodeEntry sum{nullptr, 0, 0};
+        #endif
+        //  保存多个版本的梯度的值
+        std::vector<NodeEntry> grads;
+        bool need_attr_hint{true};
+      };
+    */
+
+
+    LOG(INFO)<<"e.node->attrs.name"<<e.node->attrs.name;
+    LOG(INFO)<<"e.index"<<e.index;
+    //  属于这个节点的第几个梯度值。
     GradEntry& entry = output_grads[e.node.get()][e.index];
     // aggregate sum if there haven't been
+
     if (entry.sum.node.get() == nullptr) 
     {
+      LOG(INFO)<<"entry.sum.node.get() == nullptr";
       entry.sum = agg_fun(std::move(entry.grads));
       if (entry.need_attr_hint && attr_hint_fun != nullptr) {
         entry.sum = attr_hint_fun(entry.sum, e);
@@ -344,6 +404,7 @@ LOG(INFO)<<"topo_order.size()"<<topo_order.size();
     {
         ret.outputs[counter] = entry.sum;
     }
+    //  对于有效的输出的实体计数
     ++counter;
   }
   //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
