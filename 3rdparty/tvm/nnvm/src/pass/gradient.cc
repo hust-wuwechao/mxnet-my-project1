@@ -122,7 +122,7 @@ Graph Gradient(Graph src)
   std::vector<NodePtr> topo_order;
   
   std::unordered_map<Node*, std::vector<GradEntry> > output_grads;
-
+  //  节点和对应的梯度
   //  这里面又是采用深度优先遍历的方式。
   //  从ys  也就是损失结果反向深度遍历
   DFSVisit(ys, [&](const NodePtr& node) 
@@ -131,6 +131,8 @@ Graph Gradient(Graph src)
       if (output_grads.count(node.get()) == 0) 
       {
         // 重新修改这个节点的结果梯度的大小
+
+        LOG(INFO)<<"在DFSVIST里面"<<node->attrs.name;
         output_grads[node.get()].resize(node->num_outputs());
       }
       // 将结果加入到排序里面
@@ -197,7 +199,9 @@ for(int i=0;i<topo_order.size();i++)
   static auto& finfer_shape = Op::GetAttr<FInferShape>("FInferShape");
 
   std::vector<NodeEntry> out_agg_grads;
-  //  遍历拓扑排序
+  //   遍历拓扑排序
+  //   反向迭代器（rbegin,rend）
+  //  
   for (auto rit = topo_order.rbegin(); rit != topo_order.rend(); ++rit) 
   {
     //LOG(INFO)<<"在pass  梯里面++rit"<<rit;
@@ -209,8 +213,9 @@ for(int i=0;i<topo_order.size();i++)
     auto& out_grad_vec = output_grads.at(ptr.get());
 
     //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
-
-    for (uint32_t i = 0; i < out_grad_vec.size(); ++i) 
+    //  对于这个节点的每一个梯度值
+    LOG(INFO)<<" out_grad_vec.size()"<<out_grad_vec.size();
+    for(uint32_t i = 0; i < out_grad_vec.size(); ++i) 
     {
       GradEntry& e = out_grad_vec[i];
       e.sum = agg_fun(std::move(e.grads));
@@ -229,7 +234,8 @@ for(int i=0;i<topo_order.size();i++)
         CHECK_EQ((*rit)->inputs.size(), input_grads.size())
             << "Gradient function not returning enough gradient";
       } 
-      else if (CheckGradAllZero(out_agg_grads, zero_ops)) {
+      else if (CheckGradAllZero(out_agg_grads, zero_ops)) 
+      {
         for (size_t i = 0; i < fwd_node->num_inputs(); ++i) {
           std::ostringstream os;
           if (1 == fwd_node->num_inputs()) {
@@ -270,10 +276,12 @@ for(int i=0;i<topo_order.size();i++)
   ret.outputs.resize(xs.size());
   NodeEntryMap<std::pair<size_t, size_t> > unique_grads;
   size_t counter = 0;
-  for (const NodeEntry& e : xs) {
+  for (const NodeEntry& e : xs)
+  {
     GradEntry& entry = output_grads[e.node.get()][e.index];
     // aggregate sum if there haven't been
-    if (entry.sum.node.get() == nullptr) {
+    if (entry.sum.node.get() == nullptr) 
+    {
       entry.sum = agg_fun(std::move(entry.grads));
       if (entry.need_attr_hint && attr_hint_fun != nullptr) {
         entry.sum = attr_hint_fun(entry.sum, e);
@@ -282,7 +290,8 @@ for(int i=0;i<topo_order.size();i++)
     if (copy_op != nullptr) 
     {
       auto kv = unique_grads.find(entry.sum);
-      if (kv == unique_grads.end()) {
+      if (kv == unique_grads.end())
+       {
         unique_grads.emplace(std::move(entry.sum), std::make_pair(1, counter));
       }
       else 
@@ -294,7 +303,8 @@ for(int i=0;i<topo_order.size();i++)
         copy_node->attrs.op = copy_op;
         copy_node->attrs.name = os.str();
         copy_node->inputs.emplace_back(entry.sum);
-        if (copy_node->attrs.op->attr_parser != nullptr) {
+        if (copy_node->attrs.op->attr_parser != nullptr) 
+        {
             copy_node->attrs.op->attr_parser(&(copy_node->attrs));
         }
         unique_grads.emplace(NodeEntry{std::move(copy_node), 0, 0}, std::make_pair(1, counter));
