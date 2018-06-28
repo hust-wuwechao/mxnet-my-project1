@@ -146,7 +146,26 @@ for(int i=0;i<topo_order.size();i++)
    auto nodeptr=topo_order[i];
    LOG(INFO)<<"q求梯度时候反向遍历结果"<<nodeptr->attrs.name;
 }
-  LOG(INFO)<<"topo_order.size()"<<topo_order.size();
+//  我们可以看出按照先后的14个进行了排序
+//  排序的结果是节点。
+/* 
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果X
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w0
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b0
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w1
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b1
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果w2
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果b2
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果label
+[21:27:09] src/pass/gradient.cc:147: q求梯度时候反向遍历结果 
+*/
+ //   14
+LOG(INFO)<<"topo_order.size()"<<topo_order.size();
   CHECK_EQ(ys.size(), ys_out_grad.size());
   //   1
   LOG(INFO)<<"在pass  梯里面ys.size()"<<ys.size();
@@ -164,7 +183,7 @@ for(int i=0;i<topo_order.size();i++)
   //  Check that all xs are reachable from ys
   //  7
   LOG(INFO)<<"在pass  梯里面xs.size()"<<xs.size();
-  // 
+  // 7
   for (size_t i = 0; i < xs.size(); ++i)
   {
     CHECK(output_grads.find(xs[i].node.get()) != output_grads.end())
@@ -196,12 +215,14 @@ for(int i=0;i<topo_order.size();i++)
 
   // traverse backward
   static auto& grad_fun_map = Op::GetAttr<FGradient>("FGradient");
+
   static auto& finfer_shape = Op::GetAttr<FInferShape>("FInferShape");
+  
 
   std::vector<NodeEntry> out_agg_grads;
   //   遍历拓扑排序
   //   反向迭代器（rbegin,rend）
-  //  
+  //   
   for (auto rit = topo_order.rbegin(); rit != topo_order.rend(); ++rit) 
   {
     //LOG(INFO)<<"在pass  梯里面++rit"<<rit;
@@ -210,10 +231,12 @@ for(int i=0;i<topo_order.size();i++)
     if (ptr->is_variable()) continue;
     out_agg_grads.clear();
     // 获取到这个反向节点的梯度节点
+    // 
     auto& out_grad_vec = output_grads.at(ptr.get());
 
     //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
     //  对于这个节点的每一个梯度值
+    //  1 1 1 1 1 1 1   6 个  1
     LOG(INFO)<<" out_grad_vec.size()"<<out_grad_vec.size();
     for(uint32_t i = 0; i < out_grad_vec.size(); ++i) 
     {
@@ -227,12 +250,19 @@ for(int i=0;i<topo_order.size();i++)
     }
     if ((*rit)->inputs.size() != 0) 
     {
+      int  b=mirror_map.size() == 0 ? 1 : 0;
+      LOG(INFO)<<"b=mirror_map.size() == 0 ? 1 : 0     "<<b;
       NodePtr fwd_node = (mirror_map.size() == 0 ? ptr : mirror_map.at(ptr.get()));
+
       std::vector<NodeEntry> input_grads;
-      if (grad_fun_map.count(ptr->op())) {
+      if (grad_fun_map.count(ptr->op())) 
+      {
         input_grads = grad_fun_map[ptr->op()](fwd_node, out_agg_grads);
+        LOG(INFO)<<"对应的input_grads大小为"<<input_grads.size();
+        LOG(INFO)<<"(*rit)->inputs.size()"<<(*rit)->inputs.size();
         CHECK_EQ((*rit)->inputs.size(), input_grads.size())
             << "Gradient function not returning enough gradient";
+        
       } 
       else if (CheckGradAllZero(out_agg_grads, zero_ops)) 
       {
