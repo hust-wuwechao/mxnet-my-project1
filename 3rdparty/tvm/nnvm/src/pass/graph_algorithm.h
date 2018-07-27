@@ -26,7 +26,13 @@ namespace pass {
 inline uint32_t FindBestPath(
     const IndexedGraph& graph,
     const std::vector<uint32_t>& node_reward,
-    std::vector<uint32_t>* path) {
+    std::vector<uint32_t>* path)
+ {
+  
+  //     注意到每次开始的路径不尽相同。
+  //     所以为啥要使用 best_start_node = nid;
+  //     也就是找到第一个最大的重要度的节点作为开始。
+  //     
   const uint32_t num_nodes = static_cast<uint32_t>(graph.num_nodes());
   CHECK_EQ(num_nodes, node_reward.size());
 
@@ -38,13 +44,19 @@ inline uint32_t FindBestPath(
   for (uint32_t i = static_cast<uint32_t>(graph.num_nodes()); i != 0; --i) {
     const uint32_t nid = i - 1;
     best_reward[nid] += node_reward[nid];
-    if (best_reward[nid] > best_solution) {
+    if (best_reward[nid] > best_solution) 
+    {
       best_solution = best_reward[nid];
       best_start_node = nid;
     }
-    for (const auto& e : graph[nid].inputs) {
+    //  对于节点的每一个输入。
+
+    for (const auto& e : graph[nid].inputs) 
+    {
       const uint32_t prev = e.node_id;
-      if (best_reward[nid] > best_reward[prev]) {
+
+      if (best_reward[nid] > best_reward[prev]) 
+      {
         best_reward[prev] = best_reward[nid];
         next_node[prev] = nid;
       }
@@ -52,7 +64,8 @@ inline uint32_t FindBestPath(
   }
   path->clear();
   uint32_t reward = 0;
-  for (uint32_t nid = best_start_node; nid < num_nodes; nid = next_node[nid]) {
+  for (uint32_t nid = best_start_node; nid < num_nodes; nid = next_node[nid]) 
+  {
     path->push_back(nid); reward += node_reward[nid];
   }
   CHECK_EQ(reward, best_solution);
@@ -88,11 +101,17 @@ inline uint32_t ColorNodeGroup(
     std::vector<uint32_t> path;
     uint32_t reward = FindBestPath(graph, node_importance, &path);
     if (reward == 0) break;
-    for (uint32_t nid : path) {
-      if (node_importance[nid] != 0) {
+    for (uint32_t nid : path)
+     {
+      if (node_importance[nid] != 0) 
+      {
+        // 表示颜色还没有进行分类
         CHECK_EQ(color->at(nid), max_ncolor);
+        // 赋值为这个颜色。
         color->at(nid) = cindex;
         // make the importance 0 after color is decided.
+        // 重要度设置为0  那么下一次计算的时候
+        // 计算路径就会被忽略。
         node_importance[nid] = 0;
       }
     }

@@ -27,6 +27,7 @@ class IndexedGraph;
 class Graph {
  public:
   /*! \brief outputs of the computation graph. */
+  //  所有的输出的数据实体
   std::vector<NodeEntry> outputs;
   /*!
    * \brief attributes of a graph
@@ -100,12 +101,16 @@ class IndexedGraph {
   /*! \brief Node data structure in IndexedGraph */
   struct Node {
     /*! \brief pointer to the source node */
+    //  指向节点的指针
     const nnvm::Node* source;
     /*! \brief inputs to the node */
+    // 这个节点的所有的输入的数据实体
     array_view<NodeEntry> inputs;
+    // 这个节点的所有的控制依赖
     /*! \brief control flow dependencies to the node */
     array_view<uint32_t> control_deps;
     /*! \brief weak reference to node */
+    //  对于这个节点的弱引用
     std::weak_ptr<nnvm::Node> weak_ref;
   };
   /*! \return number of nodes in the graph */
@@ -123,6 +128,7 @@ class IndexedGraph {
    * \param node_id The node index
    * \param index the output index
    * \return the unique index.
+   * 返回这个图的对应位置的数据实体
    */
   inline uint32_t entry_id(uint32_t node_id, uint32_t index) const {
     return entry_rptr_[node_id] + index;
@@ -141,6 +147,11 @@ class IndexedGraph {
    *  for a given NodeEntry.
    * \param e The entry to query for index.
    * \return the unique index.
+   *  也就是说： 知道了一个节点的数据的实体
+   *  e.node.get()获取这个数据实体是哪个节点的输出
+   *  node_id(e.node.get() 获取到这个节点的起始的数据实体的下标
+   *  e.index  节点内部的索引 
+   *  加起来就是全局的索引的位置。
    */
   inline uint32_t entry_id(const nnvm::NodeEntry& e) const
    {
@@ -150,8 +161,10 @@ class IndexedGraph {
    * \brief Get the corresponding node id for a given Node in the IndexedGraph.
    * \param node The Node to query for index.
    * \return the node index.
+   *  获取一个节点在索引图里面的ID，下标。
    */
-  inline uint32_t node_id(const nnvm::Node* node) const {
+  inline uint32_t node_id(const nnvm::Node* node) const 
+  {
     return node2index_.at(node);
   }
   /*!
@@ -171,10 +184,13 @@ class IndexedGraph {
   inline const Node& operator[](const nnvm::Node* node) const {
     return nodes_[node_id(node)];
   }
-  /*! \return list of argument nodes */
+  /*! \return list of argument nodes
+     列出所用的参数的输入的节点，包括输入和中间的参数
+      */
   inline const std::vector<uint32_t>& input_nodes() const {
     return input_nodes_;
   }
+  //  需要写的输入的节点
   /*! \return list of mutable nodes */
   inline const std::unordered_set<uint32_t>& mutable_input_nodes() const {
     return mutable_input_nodes_;
@@ -200,30 +216,38 @@ class IndexedGraph {
    */
   explicit IndexedGraph(const Graph& other);
   // Node pointers in CSR structure.
+  //  所有的节点信息。
   std::vector<Node> nodes_;
   // Index to all input nodes.
+  //  
   std::vector<uint32_t> input_nodes_;
   // Index to all mutable input nodes.
   std::unordered_set<uint32_t> mutable_input_nodes_;
   // space to store the outputs entries
   std::vector<NodeEntry> outputs_;
   // mapping from node to index.
+  //  一个节点和对应的索引的下标的位置
   std::unordered_map<const nnvm::Node*, uint32_t> node2index_;
   // CSR pointer of node entries
+   
   std::vector<size_t> entry_rptr_;
   // space to store input entries of each
+  //  所有输入的实体。
   std::vector<NodeEntry> input_entries_;
   // control flow dependencies
+  // 所有的控制依赖
   std::vector<uint32_t> control_deps_;
 };
 
 /*!
- * \brief perform a Post Order DFS visit to each node in the graph.
- *  This order is deterministic and is also topoligical sorted.
- * \param heads The heads in the graph.
- * \param fvisit a function of type std::function<void(const std::shared_ptr<Node>&)>
- * \tparam FVisit The function type to perform the visit.
+ *     \brief perform a Post Order DFS visit to each node in the graph.
+ *     This order is deterministic and is also topoligical sorted.
+ *     \param heads      The heads in the graph.
+ *     \param fvisit     a function of type std::function<void(const std::shared_ptr<Node>&)>
+ *     \tparam FVisit The function type to perform the visit.
  */
+//     可以输入多个头结点
+//     但是按照给定的fvisit 遍历每一个节点
 template<typename FVisit>
 inline void DFSVisit(const std::vector<NodeEntry>& heads, FVisit fvisit);
 
@@ -255,31 +279,51 @@ inline T Graph::MoveCopyAttr(const std::string& attr_name) {
   }
 }
 
-template <typename GNode, typename HashType,
-           typename FVisit, typename HashFunc,
-          typename InDegree, typename GetInput>
+template <typename GNode,    typename  HashType,
+          typename FVisit,   typename  HashFunc,
+          typename InDegree,  typename GetInput>
 void PostOrderDFSVisit(const std::vector<GNode>& heads,
                        FVisit fvisit,
                        HashFunc hash,
                        InDegree indegree,
                        GetInput getinput) {
+
   std::vector<std::pair<GNode, uint32_t> > stack;
   std::unordered_set<HashType> visited;
-  for (auto& head : heads) {
+  //  遍历每一个头部，也就是出发点
+  for (auto& head : heads)  //  外面访问不同的节点
+   {
+    //  将这个节点进行hash得到key   存在hash 表里面的key 的长度可以减少
     HashType head_hash = hash(head);
-    if (visited.count(head_hash) == 0) {
+    // 还没有遍历
+    if (visited.count(head_hash) == 0) 
+    {
+      // 压进，0表示第一次访问。
       stack.push_back(std::make_pair(head, 0));
+      // 表示访问过，加入到hash 表里面
       visited.insert(head_hash);
     }
-    while (!stack.empty()) {
+
+    while (!stack.empty()) 
+    {
       std::pair<GNode, uint32_t>& back = stack.back();
-      if (back.second == indegree(back.first)) {
+      // 如果这个节点的访问次数和入度访问的次数一样，那么可以出来了
+      if (back.second == indegree(back.first)) 
+      {
+        // 正式处理这个节点
         fvisit(back.first);
+        // 弹出
         stack.pop_back();
-      } else {
+      } 
+      else   //  还有孩子节点没有访问完。
+      {
+        // 获得这个节点的第back.second个输入节点。并且back.second++
         const GNode& input = getinput(back.first, back.second++);
+        //  
         HashType input_hash = hash(input);
-        if (visited.count(input_hash) == 0) {
+        if (visited.count(input_hash) == 0)
+         {
+           // 输入节点进入
           stack.push_back(std::make_pair(input, 0));
           visited.insert(input_hash);
         }
@@ -288,28 +332,35 @@ void PostOrderDFSVisit(const std::vector<GNode>& heads,
   }
 }
 
+
+// 
 template<typename FVisit>
 inline void DFSVisit(const std::vector<NodeEntry>& heads,
                      FVisit fvisit) 
 {
   typedef const NodePtr* GNode;
   std::vector<GNode> head_nodes(heads.size());
+  //   先有数据实体转换为找到对应的节点。
   std::transform(heads.begin(), heads.end(), head_nodes.begin(),
                  [](const NodeEntry& e)->GNode {
                    return &e.node;
                  });
+  //   然后在进行深度后续遍历。               
   PostOrderDFSVisit<GNode, Node*>(
       head_nodes,
-      [fvisit](GNode n) { fvisit(*n); },  // FVisit
-      [](GNode n)->Node* { return n->get(); },  // HashFunc
-      [](GNode n)->uint32_t {  // InDegree
+      [fvisit](GNode n) { fvisit(*n); },        // FVisit     遍历函数
+      [](GNode n)->Node* { return n->get(); },  // HashFunc  哈希函数
+      [](GNode n)->uint32_t {                   // InDegree   返回入度包括输入和控制依赖
         if (!(*n)) return 0;
         return (*n)->inputs.size() + (*n)->control_deps.size();
       },
-      [](GNode n, uint32_t index)->GNode {  // GetInput
-        if (index < (*n)->inputs.size()) {
+      [](GNode n, uint32_t index)->GNode {     // GetInput   获取某个节点的第index个输入
+        if (index < (*n)->inputs.size()) 
+        {
           return &(*n)->inputs.at(index).node;
-        } else {
+        } 
+        else 
+        {
           return &(*n)->control_deps.at(index - (*n)->inputs.size());
         }
       });

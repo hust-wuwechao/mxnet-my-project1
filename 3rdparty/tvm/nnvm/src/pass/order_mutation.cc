@@ -28,8 +28,10 @@ inline bool IsMutate(const std::vector<uint32_t>& mutate_inputs, uint32_t i) {
 Graph OrderMutation(const Graph& src) {
   std::unordered_map<Node*, std::vector<NodeEntry> > version_hist;
   DFSVisit(src.outputs, [&version_hist](const NodePtr& n) {
-      for (const NodeEntry& e : n->inputs) {
-        if (e.node->is_variable()) {
+      for (const NodeEntry& e : n->inputs)
+       {
+        if (e.node->is_variable())
+         {
           if (e.version != 0 && version_hist.count(e.node.get()) == 0) {
             version_hist[e.node.get()] = std::vector<NodeEntry>{};
           }

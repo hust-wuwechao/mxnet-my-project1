@@ -31,7 +31,8 @@ namespace nnvm {
 class NNVM_DLL Symbol {
  public:
   /*! \brief option passed to ListAttr */
-  enum ListAttrOption {
+  enum ListAttrOption 
+  {
     /*! \brief recursively list all attributes */
     kRecursive = 0,
     /*! \brief only list attributes in current node */
@@ -98,14 +99,14 @@ class NNVM_DLL Symbol {
    */
   std::vector<std::string> ListOutputNames() const;
   /*!
-   * \brief Compose the symbol with arguments, this changes the current symbol.
+   * \brief Compose the symbol with arguments, 
+   * this changes the current symbol.
    * The kwargs passed in can be in-complete,
-   *
    * The rest of the symbols will remain the same name.
    *
-   * \param args Positional arguments.
-   * \param kwargs Keyword arguments for the symbol.
-   * \param name Name of returned symbol.
+   * \param  args Positional arguments.
+   * \param  kwargs Keyword arguments for the symbol.
+   * \param  name Name of returned symbol.
    */
   void Compose(const array_view<const Symbol*>& args,
                const std::unordered_map<std::string, const Symbol*>& kwargs,
