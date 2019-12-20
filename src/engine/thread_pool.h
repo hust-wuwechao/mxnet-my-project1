@@ -43,10 +43,12 @@ class ThreadPool {
   /*! \brief Signal event upon destruction, even for exceptions (RAII) */
   struct SetReadyOnDestroy {
     explicit inline SetReadyOnDestroy(const std::shared_ptr<dmlc::ManualEvent>& event)
-      : event_(event) {
+      : event_(event) 
+      {
     }
     inline ~SetReadyOnDestroy() {
-      if (event_) {
+      if (event_)
+       {
         event_->signal();
       }
     }
@@ -57,25 +59,32 @@ class ThreadPool {
    * \brief Constructor takes function to run.
    * \param size size of the thread pool.
    * \param func the function to run on the thread pool.
+   * : worker_threads_(size) 表示初始化列表
    */
   explicit ThreadPool(size_t size, std::function<void()> func)
-      : worker_threads_(size) {
-    CHECK_GT(size, 0);
-    for (auto& i : worker_threads_) {
-      i = std::thread(func);
-    }
-  }
+  : worker_threads_(size)
+  {
+     CHECK_GT(size, 0);
+
+     for (auto& i : worker_threads_) 
+     {
+       i = std::thread(func);
+     }
+   }
   explicit ThreadPool(size_t size,
                       std::function<void(std::shared_ptr<dmlc::ManualEvent> ready)> func,
                       const bool wait)
-      : worker_threads_(size) {
+      : worker_threads_(size)
+   {
     CHECK_GT(size, 0);
-    for (auto& i : worker_threads_) {
+    for (auto& i : worker_threads_) 
+    {
       std::shared_ptr<dmlc::ManualEvent> ptr = std::make_shared<dmlc::ManualEvent>();
       ready_events_.emplace_back(ptr);
       i = std::thread(func, ptr);
     }
-    if (wait) {
+    if (wait) 
+    {
       WaitForReady();
     }
   }
@@ -88,17 +97,21 @@ class ThreadPool {
  private:
   /*!
    * \brief Wait for all started threads to signal that they're ready
+   * 等待发出所有的信号。
    */
-  void WaitForReady() {
-    for (const std::shared_ptr<dmlc::ManualEvent>& ptr : ready_events_) {
+  void WaitForReady() 
+  {
+    for (const std::shared_ptr<dmlc::ManualEvent>& ptr : ready_events_)
+     {
       ptr->wait();
     }
   }
 
   /*!
-   * \brief Worker threads.
+   *  \brief Worker threads.
+   *  线程向量
    */
-  std::vector<std::thread> worker_threads_;
+  std::vector<std::thread>  worker_threads_;
   /*!
    * \brief Startup synchronization objects
    */

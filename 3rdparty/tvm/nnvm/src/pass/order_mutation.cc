@@ -4,6 +4,7 @@
  * \brief Add control flow dependencies between nodes
  *  To correctly order mutation and read to resolve
  *  write after read problem and read after write problems.
+ *  保证读后写，写后读的控制依赖。
  */
 #include <nnvm/pass.h>
 #include <nnvm/op_attr_types.h>

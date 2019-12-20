@@ -22,7 +22,9 @@ namespace pass {
  * \param node_reward the reward of each node.
  * \param path the output path of nodes.
  * \return the total reward of best path.
+ *  采用了数据的。
  */
+
 inline uint32_t FindBestPath(
     const IndexedGraph& graph,
     const std::vector<uint32_t>& node_reward,
@@ -41,20 +43,21 @@ inline uint32_t FindBestPath(
   uint32_t best_solution = 0, best_start_node = 0;
 
   // traverse in reverse topo order
-  for (uint32_t i = static_cast<uint32_t>(graph.num_nodes()); i != 0; --i) {
+  for (uint32_t i = static_cast<uint32_t>(graph.num_nodes()); i != 0; --i) 
+  {
     const uint32_t nid = i - 1;
     best_reward[nid] += node_reward[nid];
     if (best_reward[nid] > best_solution) 
     {
+      // 需要注意的是： best_start_node 是最终的值最大的的最终节点，也就是图里面的起始节点，由于图是按照反向遍历的方式。
       best_solution = best_reward[nid];
       best_start_node = nid;
     }
     //  对于节点的每一个输入。
-
     for (const auto& e : graph[nid].inputs) 
     {
+      // 获取这个数据的所属于的原节点。
       const uint32_t prev = e.node_id;
-
       if (best_reward[nid] > best_reward[prev]) 
       {
         best_reward[prev] = best_reward[nid];
@@ -64,9 +67,12 @@ inline uint32_t FindBestPath(
   }
   path->clear();
   uint32_t reward = 0;
+  //  从头到尾进行遍历。
+  //  加入到路径里面去。
   for (uint32_t nid = best_start_node; nid < num_nodes; nid = next_node[nid]) 
   {
-    path->push_back(nid); reward += node_reward[nid];
+    path->push_back(nid);
+    reward += node_reward[nid];
   }
   CHECK_EQ(reward, best_solution);
   return best_solution;
@@ -97,8 +103,14 @@ inline uint32_t ColorNodeGroup(
   // greedy algorithm, every time
   // find a path with best reward and assign a new color
   // All the nodes in the path cannot run in parallel.
-  for (cindex = 0; cindex < max_ncolor - 1; ++cindex) {
+  for (cindex = 0; cindex < max_ncolor - 1; ++cindex) 
+  {
     std::vector<uint32_t> path;
+    // 每次选择一个一个路径。
+    // 路径里面的值都设置为这个颜色。
+    // 注意important的经过一次之后
+    // 设置为0
+    // 
     uint32_t reward = FindBestPath(graph, node_importance, &path);
     if (reward == 0) break;
     for (uint32_t nid : path)

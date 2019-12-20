@@ -189,7 +189,9 @@ class GraphExecutor : public Executor {
   Graph InitFullGraph(nnvm::Symbol symbol,
                       const std::vector<OpReqType>& grad_req_types);
   // initialize the cached operator
+  // 对Op的短进行划分。
   void InitCachedOps();
+  //  也就是一次执行一个批次的OP吗？
   // initialize the opr segments for bulk exec
   void InitOpSegs();
   // initialize the resources in the graph

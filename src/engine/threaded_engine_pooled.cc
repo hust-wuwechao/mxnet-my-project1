@@ -71,6 +71,9 @@ class ThreadedEnginePooled : public ThreadedEngine {
     streams_.reset(new StreamManager<kMaxNumGpus, kNumStreamsPerGpu>());
     task_queue_.reset(new dmlc::ConcurrentBlockingQueue<OprBlock*>());
     io_task_queue_.reset(new dmlc::ConcurrentBlockingQueue<OprBlock*>());
+  /*   //explicit ThreadPool(size_t size,
+                      std::function<void(std::shared_ptr<dmlc::ManualEvent> ready)> func,
+                      const bool wait) */
     thread_pool_.reset(new ThreadPool(kNumWorkingThreads,
                                       [this](std::shared_ptr<dmlc::ManualEvent> ready_event) {
                                         ThreadWorker(task_queue_, ready_event); },
@@ -82,10 +85,15 @@ class ThreadedEnginePooled : public ThreadedEngine {
   }
 
  protected:
-  void PushToExecute(OprBlock *opr_block, bool pusher_thread) override {
-    if (opr_block->opr->prop == FnProperty::kAsync && pusher_thread) {
+  void PushToExecute(OprBlock *opr_block, bool pusher_thread) override 
+  {
+    // 是不是异步的。
+    if (opr_block->opr->prop == FnProperty::kAsync && pusher_thread) 
+    {
       DoExecute(opr_block);
-    } else {
+    } 
+    else 
+    {
       DoPushToQueue(opr_block);
     }
   }
@@ -99,6 +107,10 @@ class ThreadedEnginePooled : public ThreadedEngine {
   static constexpr std::size_t kNumStreamsPerGpu = 16;
   /*!
    * \brief Streams.
+   * 每一个GPU16个流
+   * 总共有多少个GPU
+   * 然后乘法就是多少个流的管理器。
+   * 
    */
   std::unique_ptr<StreamManager<kMaxNumGpus, kNumStreamsPerGpu>> streams_;
   /*!
@@ -108,6 +120,7 @@ class ThreadedEnginePooled : public ThreadedEngine {
   std::shared_ptr<dmlc::ConcurrentBlockingQueue<OprBlock*>> io_task_queue_;
   /*!
    * \brief Thread pools.
+   * 具有2个独立的线程池
    */
   std::unique_ptr<ThreadPool> thread_pool_;
   std::unique_ptr<ThreadPool> io_thread_pool_;
@@ -118,10 +131,15 @@ class ThreadedEnginePooled : public ThreadedEngine {
    * The method to pass to thread pool to parallelize.
    */
   void ThreadWorker(std::shared_ptr<dmlc::ConcurrentBlockingQueue<OprBlock*>> task_queue,
-                    const std::shared_ptr<dmlc::ManualEvent>& ready_event) {
+                    const std::shared_ptr<dmlc::ManualEvent>& ready_event)
+  {
+    // 任务队列准备事件
     OprBlock* opr_block;
     ready_event->signal();
-    while (task_queue->Pop(&opr_block)) {
+    // 不断的执行。
+    while (task_queue->Pop(&opr_block)) 
+    {
+      // 线性不断拉去任务并且执行。
       DoExecute(opr_block);
     }
   }
@@ -129,17 +147,21 @@ class ThreadedEnginePooled : public ThreadedEngine {
    * \brief Execute an operation.
    * \param opr_block The operator block.
    */
-  void DoExecute(OprBlock* opr_block) {
+  void DoExecute(OprBlock* opr_block) 
+  {
     assert(opr_block->wait.load() == 0);
-    if (opr_block->ctx.dev_mask() == gpu::kDevMask) {
+    if (opr_block->ctx.dev_mask() == gpu::kDevMask) 
+    {
       #if MXNET_USE_CUDA
+      // 代码在本设备上运行。
       CUDA_CALL(cudaSetDevice(opr_block->ctx.dev_id));
       #else   // MXNET_USE_CUDA
       LOG(FATAL) << "Please compile with CUDA enabled";
       #endif  // MXNET_USE_CUDA
     }
-    bool is_copy = (opr_block->opr->prop == FnProperty::kCopyFromGPU ||
+      bool is_copy = (opr_block->opr->prop == FnProperty::kCopyFromGPU ||
                     opr_block->opr->prop == FnProperty::kCopyToGPU);
+    // 根据任务是不是复制，决定运行的上下文。
     auto&& rctx = is_copy
         ? streams_->GetIORunContext(opr_block->ctx)
         : streams_->GetRunContext(opr_block->ctx);
@@ -149,14 +171,20 @@ class ThreadedEnginePooled : public ThreadedEngine {
    * \brief Push the operation to the queue.
    * \param opr_block The operator block.
    */
-  void DoPushToQueue(OprBlock* opr_block) {
-    switch (opr_block->opr->prop) {
+  void DoPushToQueue(OprBlock* opr_block) 
+  {
+    switch (opr_block->opr->prop) 
+    {
       case FnProperty::kCopyFromGPU:
-      case FnProperty::kCopyToGPU: {
+      case FnProperty::kCopyToGPU: 
+      {
+        // 进入i0_队列
         io_task_queue_->Push(opr_block);
         break;
       }
-      default: {
+      default: 
+      {
+        // 进入任务队列
         task_queue_->Push(opr_block);
         break;
       }

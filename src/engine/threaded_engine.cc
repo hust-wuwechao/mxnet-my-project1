@@ -50,14 +50,17 @@ ThreadedVar::ThreadedVar(VersionedVarBlock* head) : head_{head} {
 
 inline void ThreadedVar::AppendReadDependency(OprBlock* opr_block) {
   std::lock_guard<std::mutex> lock{mutex_};
-  if (pending_write_ == nullptr) {
+  if (pending_write_ == nullptr) 
+  {
     // invariant: is_ready_to_read()
     CHECK_GE(num_pending_reads_, 0);
     // STATE CHANGE
     ++num_pending_reads_;
     // decrease wait counter
     opr_block->decr_wait();
-  } else {
+  } 
+  else 
+  {
     auto&& new_var_block = VersionedVarBlock::New();
     assert(head_->next == nullptr);
     assert(head_->trigger == nullptr);
@@ -332,10 +335,12 @@ void ThreadedEngine::PushAsync(AsyncFn fn, Context exec_ctx,
                                FnProperty prop,
                                int priority,
                                const char* opr_name,
-                               bool wait) {
-#if MXNET_USE_CUDA
-  if (exec_ctx.dev_mask() == gpu::kDevMask) {
-    if (device_count_ < 0) {
+                               bool wait) 
+                               {
+   #if MXNET_USE_CUDA
+   if (exec_ctx.dev_mask() == gpu::kDevMask) {
+    if (device_count_ < 0) 
+    {
       int tmp = -1;
       cudaGetDeviceCount(&tmp);
       device_count_ = tmp;
@@ -345,8 +350,8 @@ void ThreadedEngine::PushAsync(AsyncFn fn, Context exec_ctx,
         << "Invalid GPU Id: " << exec_ctx.dev_id
         << ", Valid device id should be less than device_count: "
         << device_count_;
-  }
-#endif
+   }
+   #endif
   ThreadedOpr *opr = NewOperator(std::move(fn), const_vars, mutable_vars, prop, opr_name, wait);
   opr->temporary = true;
   const bool profiling = profiler_->IsProfiling(profiler::Profiler::kImperative);
@@ -359,16 +364,18 @@ void ThreadedEngine::PushSync(SyncFn exec_fn, Context exec_ctx,
                               FnProperty prop,
                               int priority,
                               const char* opr_name) {
-  if (!bulk_size() || prop != FnProperty::kNormal || priority) {
-    this->PushAsync([exec_fn](RunContext ctx, CallbackOnComplete on_complete) {
-        exec_fn(ctx);
-        on_complete();
+  if (!bulk_size() || prop != FnProperty::kNormal || priority)
+  {
+    this->PushAsync([exec_fn](RunContext ctx, CallbackOnComplete on_complete) 
+      {
+        exec_fn(ctx);     // 执行的函数
+        on_complete();    // 完成后回调的函数
       }, exec_ctx, const_vars, mutable_vars, prop, priority, opr_name);
     return;
   }
-
   const BulkStatus& bulk_status = *BulkStatusStore::Get();
-  if (bulk_status.count && exec_ctx != bulk_status.ctx) BulkFlush();
+  if (bulk_status.count && exec_ctx != bulk_status.ctx) 
+  BulkFlush();
   BulkAppend(exec_fn, exec_ctx, const_vars, mutable_vars);
 }
 
@@ -426,7 +433,8 @@ void ThreadedEngine::WaitForVar(VarHandle var) {
 void ThreadedEngine::WaitForAll() {
   BulkFlush();
   std::unique_lock<std::mutex> lock{finished_m_};
-  finished_cv_.wait(lock, [this]() {
+  finished_cv_.wait(lock, [this]() 
+  {
       return pending_.load() == 0 || kill_.load();
     });
 }

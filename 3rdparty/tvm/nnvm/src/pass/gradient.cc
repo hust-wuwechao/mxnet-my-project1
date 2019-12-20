@@ -193,7 +193,8 @@ for(int i=0;i<topo_order.size();i++)
   // construct mirror reduece memory strategy if needed
   std::unordered_map<Node*, NodePtr> mirror_map;
   if (mirror_fun != nullptr) {
-    for (const NodePtr& n : topo_order) {
+    for (const NodePtr& n : topo_order) 
+    {
       if (mirror_fun(*n)) {
         NodePtr new_node = Node::Create();
         *new_node = *n;
@@ -260,8 +261,7 @@ for(int i=0;i<topo_order.size();i++)
         //LOG(INFO)<<"(*rit)->inputs.size()"<<(*rit)->inputs.size();
         //这个节点本身的输入和需要计算的输入的梯度数目是不是相同
         CHECK_EQ((*rit)->inputs.size(), input_grads.size())
-            << "Gradient function not returning enough gradient";
-        
+            << "Gradient function not returning enough gradient";   
       } 
       else if (CheckGradAllZero(out_agg_grads, zero_ops)) 
       {
@@ -360,7 +360,6 @@ for(int i=0;i<topo_order.size();i++)
     ++counter;
   }
   //LOG(INFO)<<"auto& out_grad_vec = output_grads.at(ptr.get());  out_grad_vec  在pass  out_grad_vec.size()  "<<out_grad_vec<<"   "<<out_grad_vec.size();
-
   if (copy_op != nullptr) 
   {
     for (const auto& kv : unique_grads) 

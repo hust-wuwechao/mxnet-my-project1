@@ -390,7 +390,6 @@ class ThreadedEngine : public Engine {
       {
         // 设置异常信息。依赖的异常变成自己的异常
         OnStart(threaded_opr);
-
         if (debug_info) 
         {
           LOG(INFO) << "ExecuteOprFn ";
@@ -400,7 +399,9 @@ class ThreadedEngine : public Engine {
           if (!(threaded_opr->opr_exception && *threaded_opr->opr_exception) ||
               threaded_opr->wait) 
           {
-            // 调用对应的函数执行
+              //  调用对应的函数执行
+              //  对应的函数执行。
+              //  调用对应的函数执行。
             threaded_opr->fn(run_ctx, callback);
           }
           else 
@@ -574,11 +575,11 @@ class ThreadedEngine : public Engine {
   /*!
    * \brief Number of pending operations.
    */
-  std::atomic<int> pending_{0};
+  std::atomic<int>  pending_{0};
   /*! \brief whether we want to kill the waiters */
-  std::atomic<bool> kill_{false};
+  std::atomic<bool>  kill_{false};
   /*! \brief whether it is during shutdown phase*/
-  std::atomic<bool> shutdown_phase_{false};
+  std::atomic<bool>  shutdown_phase_{false};
   /*!\brief show more information from engine actions */
   bool engine_info_{false};
   /*! \brief debug information about wait for var. */

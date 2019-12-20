@@ -43,7 +43,7 @@ class NaiveEngine final : public Engine {
     const char* opr_name;
     /*! \brief indicate whether to profile this operator */
     bool profiling{false};
-    /*! \brief operator execution statistics */
+    /*! \brief operator execution statistics 统计数据执行的 */
     std::unique_ptr<profiler::ProfileOperator> opr_profile;
   };
 
@@ -99,8 +99,10 @@ class NaiveEngine final : public Engine {
     profiler::Profiler *profiler = profiler::Profiler::Get();
     NaiveOpr *opr = op->Cast<NaiveOpr>();
     opr->profiling = profiling && profiler->IsProfiling(profiler::Profiler::kSymbolic);
-    this->PushAsync([&](RunContext ctx, CallbackOnComplete on_complete) {
-        if (opr->profiling) {
+    this->PushAsync([&](RunContext ctx, CallbackOnComplete on_complete) 
+     {
+        if (opr->profiling) 
+        {
           std::unique_ptr<profiler::ProfileOperator::Attributes> attrs;
           if (profiler->AggregateEnabled()) {
             attrs.reset(new profiler::ProfileOperator::Attributes());
@@ -109,7 +111,8 @@ class NaiveEngine final : public Engine {
           opr->opr_profile->start(exec_ctx.dev_type, exec_ctx.dev_id);
         }
         opr->fn(ctx, on_complete);
-        if (opr->profiling) {
+        if (opr->profiling) 
+        {
           opr->opr_profile->stop();
         }
       },
@@ -146,26 +149,35 @@ class NaiveEngine final : public Engine {
       opr->opr_profile.reset(new profiler::ProfileOperator(opr->opr_name, attrs.release()));
       opr->opr_profile->start(exec_ctx.dev_type, exec_ctx.dev_id);
     }
-    if (exec_ctx.dev_mask() == gpu::kDevMask) {
-#if MXNET_USE_CUDA
+    if (exec_ctx.dev_mask() == gpu::kDevMask) 
+    {
+     #if MXNET_USE_CUDA
+       
       size_t dev_id = static_cast<size_t>(exec_ctx.dev_id);
       MSHADOW_CATCH_ERROR(mshadow::SetDevice<gpu>(exec_ctx.dev_id));
-      if (streams_.size() <= dev_id) {
+      if (streams_.size() <= dev_id) 
+      {
         streams_.resize(dev_id + 1, nullptr);
       }
-      if (streams_[dev_id] == nullptr) {
+      // 这台设备上的流不为空
+      if (streams_[dev_id] == nullptr) 
+      {
         streams_[dev_id] = mshadow::NewStream<gpu>(true, MXNET_USE_CUDNN != 0, dev_id);
       }
+      // 在这个流里面执行。
       exec_fun(RunContext{exec_ctx, streams_[dev_id]}, callback);
-#else
+      #else
       LOG(FATAL) << "GPU is not enabled";
-#endif
-    } else {
+    #endif
+    } 
+    else 
+    {
       exec_fun(RunContext{exec_ctx, &cpu_stream_}, callback);
     }
     CHECK(this->req_completed_)
         << "NaiveEngine only support synchronize Push so far";
-    if (profiling) {
+    if (profiling) 
+    {
       opr->opr_profile->stop();
     }
   }
