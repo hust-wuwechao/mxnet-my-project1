@@ -1863,7 +1863,7 @@ void GraphExecutor::InitCachedOps()
       exec->out_array.push_back(data_entry_[eid]);
       //   如果这个实体是aad_to
       // 
-      int  add_to= addto_entry.at(eid)！=0? 1:0;
+      //int  add_to=addto_entry.at(eid)！=0? 1:0;
       //LOG(INFO)<<"节点的ID为  "<< "";
       if (addto_entry.at(eid) != 0) 
       {
