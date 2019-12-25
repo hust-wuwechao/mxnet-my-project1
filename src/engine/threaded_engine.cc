@@ -504,12 +504,15 @@ void ThreadedEngine::OnCompleteStatic(
     Engine *engine, void *opr_block_) {
   OprBlock *opr_block = static_cast<OprBlock*>(opr_block_);
   ThreadedOpr *threaded_opr = opr_block->opr;
-  if (opr_block->profiling && threaded_opr->opr_name) {
+  if (opr_block->profiling && threaded_opr->opr_name)
+  {
     // record operator end timestamp
     opr_block->opr_profile->stop();
   }
+   LOG(INFO) << "依次执行完毕的OP名字 "<< threaded_opr->opr_name;
   static_cast<ThreadedEngine*>(engine)->OnComplete(threaded_opr);
   OprBlock::Delete(opr_block);
+
 }
 
 }  // namespace engine
